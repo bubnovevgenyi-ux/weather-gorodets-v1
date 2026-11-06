@@ -9,4 +9,3 @@ __pycache__/
 .env
 data/weather.json
 data/weather.json.tmp
-assets/weather_icons/
