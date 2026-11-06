@@ -9,11 +9,60 @@
 загружает HTML, извлекает текст тега `<title>` с помощью BeautifulSoup
 и парсера `lxml`, а затем выводит его в консоль.
 
-### Установка
+## Запуск в Docker
+
+Требуется установленный и запущенный Docker (например, Docker Desktop на Windows).
+
+### 1. Получить проект
+
+Если репозиторий ещё не склонирован:
+
+```bash
+git clone https://github.com/bubnovevgenyi-ux/weather-gorodets-v1.git
+cd weather-gorodets-v1
+```
+
+Если проект уже есть на компьютере, перейдите в его каталог и обновите код:
+
+```bash
+git pull origin main
+```
+
+### 2. Собрать Docker-образ
+
+В каталоге проекта выполните:
+
+```bash
+docker build -t weather-gorodets .
+```
+
+### 3. Запустить контейнер
+
+```bash
+docker run --rm weather-gorodets
+```
+
+Контейнер загрузит страницу Gismeteo, выведет заголовок в терминал и завершит работу. Параметр `--rm` автоматически удалит остановленный контейнер.
+
+Ожидаемый формат вывода:
+
+```text
+Title страницы: ...
+```
+
+### Повторный запуск после обновления кода
+
+После получения изменений из GitHub пересоберите образ и запустите контейнер:
+
+```bash
+git pull origin main
+docker build --pull -t weather-gorodets .
+docker run --rm weather-gorodets
+```
+
+## Локальный запуск без Docker (для разработки)
 
 Требуется Python 3.9 или новее.
-
-Создайте и активируйте виртуальное окружение:
 
 ```bash
 python -m venv .venv
@@ -31,31 +80,24 @@ Windows PowerShell:
 .venv\Scripts\Activate.ps1
 ```
 
-Установите зависимости:
+Установка зависимостей и запуск:
 
 ```bash
 python -m pip install -r requirements.txt
-```
-
-### Запуск
-
-```bash
 python main.py
 ```
 
-При успешной загрузке в консоли появится строка с заголовком страницы:
+## Обработка ошибок
 
-```text
-Title страницы: ...
-```
-
-При ошибке HTTP-запроса или отсутствии тега `<title>` скрипт выведет
-сообщение в stderr и завершится с кодом `1`.
+При ошибке HTTP-запроса или отсутствии тега `<title>` скрипт выводит сообщение
+в stderr и завершается с кодом `1`.
 
 ## Структура проекта
 
 ```text
 weather-gorodets-v1/
+├── .dockerignore
+├── Dockerfile
 ├── main.py
 ├── requirements.txt
 └── README.md
