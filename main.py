@@ -44,7 +44,7 @@ def main() -> int:
     print(f"Title страницы: {title}")
     print(f"Получено точек прогноза: {len(forecast)}")
     print(f"JSON сохранён: {json_path}")
-    print("\\nВремя | Состояние неба | Температура | Ветер | Порывы | Направление")
+    print("\nВремя | Состояние неба | Температура | Ветер | Порывы | Направление")
     for weather in forecast.values():
         direction = weather.wind_direction or "—"
         print(
