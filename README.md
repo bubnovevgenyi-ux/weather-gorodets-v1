@@ -9,96 +9,84 @@
 загружает HTML, извлекает текст тега `<title>` с помощью BeautifulSoup
 и парсера `lxml`, а затем выводит его в консоль.
 
-## Запуск в Docker
+## Локальный запуск на Python 3.12 (Windows)
 
-Требуется установленный и запущенный Docker (например, Docker Desktop на Windows).
+### 1. Проверить установку Python
 
-### 1. Получить проект
+В PowerShell выполните:
+
+```powershell
+py -3.12 --version
+```
+
+Команда должна показать версию Python 3.12.x.
+
+### 2. Получить проект
 
 Если репозиторий ещё не склонирован:
 
-```bash
+```powershell
 git clone https://github.com/bubnovevgenyi-ux/weather-gorodets-v1.git
 cd weather-gorodets-v1
 ```
 
-Если проект уже есть на компьютере, перейдите в его каталог и обновите код:
+Если проект уже находится на компьютере, перейдите в его каталог и получите
+последние изменения:
 
-```bash
+```powershell
 git pull origin main
 ```
 
-### 2. Собрать Docker-образ
+### 3. Создать виртуальное окружение
 
-В каталоге проекта выполните:
-
-```bash
-docker build -t weather-gorodets .
+```powershell
+py -3.12 -m venv .venv
 ```
 
-### 3. Запустить контейнер
-
-```bash
-docker run --rm weather-gorodets
-```
-
-Контейнер загрузит страницу Gismeteo, выведет заголовок в терминал и завершит работу. Параметр `--rm` автоматически удалит остановленный контейнер.
-
-Ожидаемый формат вывода:
-
-```text
-Title страницы: ...
-```
-
-### Повторный запуск после обновления кода
-
-После получения изменений из GitHub пересоберите образ и запустите контейнер:
-
-```bash
-git pull origin main
-docker build --pull -t weather-gorodets .
-docker run --rm weather-gorodets
-```
-
-## Локальный запуск без Docker (для разработки)
-
-Требуется Python 3.9 или новее.
-
-```bash
-python -m venv .venv
-```
-
-Linux / macOS:
-
-```bash
-source .venv/bin/activate
-```
-
-Windows PowerShell:
+### 4. Активировать виртуальное окружение
 
 ```powershell
 .venv\Scripts\Activate.ps1
 ```
 
-Установка зависимостей и запуск:
+Если PowerShell блокирует активацию скрипта, для текущего окна терминала
+можно разрешить её командой:
 
-```bash
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.venv\Scripts\Activate.ps1
+```
+
+### 5. Установить зависимости
+
+```powershell
+python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
+```
+
+### 6. Запустить парсер
+
+```powershell
 python main.py
+```
+
+При успешной загрузке страницы в консоли появится заголовок:
+
+```text
+Title страницы: ...
+```
+
+## Структура проекта
+
+```text
+weather-gorodets-v1/
+├── .venv/              # локальное виртуальное окружение (не коммитится)
+├── main.py             # загрузка страницы и извлечение <title>
+├── requirements.txt    # зависимости проекта
+└── README.md            # инструкция
 ```
 
 ## Обработка ошибок
 
 При ошибке HTTP-запроса или отсутствии тега `<title>` скрипт выводит сообщение
 в stderr и завершается с кодом `1`.
-
-## Структура проекта
-
-```text
-weather-gorodets-v1/
-├── .dockerignore
-├── Dockerfile
-├── main.py
-├── requirements.txt
-└── README.md
-```
