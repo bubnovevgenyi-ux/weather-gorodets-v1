@@ -12,8 +12,6 @@ class HourlyWeather:
     wind_speed_ms: float
     wind_gust_ms: float
     wind_direction: str | None
-    icon_path: str | None
-    icon_symbols: tuple[str, ...]
 
 
 # Ключ — Unix timestamp (секунды UTC), значение — запись прогноза.
