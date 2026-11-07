@@ -9,5 +9,5 @@ __pycache__/
 .env
 data/weather.json
 data/weather.json.tmp
-# Остатки SVG от предыдущей версии парсера
 assets/weather_icons/
+output/

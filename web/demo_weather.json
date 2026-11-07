@@ -1,0 +1,33 @@
+{
+  "fetched_at_utc": "DEMO",
+  "forecasts": {
+    "today": {
+      "label": "Погода сегодня",
+      "source_url": "https://www.gismeteo.ru/weather-gorodets-4334/",
+      "hours": {
+        "1793998800": { "timestamp": 1793998800, "time": "0:00", "sky": "Облачно", "temperature_c": 2, "wind_speed_ms": 2, "wind_gust_ms": 5, "wind_direction": "СЗ" },
+        "1794009600": { "timestamp": 1794009600, "time": "3:00", "sky": "Небольшой дождь", "temperature_c": 2, "wind_speed_ms": 3, "wind_gust_ms": 6, "wind_direction": "З" },
+        "1794020400": { "timestamp": 1794020400, "time": "6:00", "sky": "Пасмурно", "temperature_c": 1, "wind_speed_ms": 3, "wind_gust_ms": 6, "wind_direction": "З" },
+        "1794031200": { "timestamp": 1794031200, "time": "9:00", "sky": "Облачно", "temperature_c": 3, "wind_speed_ms": 4, "wind_gust_ms": 7, "wind_direction": "ЮЗ" },
+        "1794042000": { "timestamp": 1794042000, "time": "12:00", "sky": "Переменная облачность", "temperature_c": 5, "wind_speed_ms": 4, "wind_gust_ms": 7, "wind_direction": "ЮЗ" },
+        "1794052800": { "timestamp": 1794052800, "time": "15:00", "sky": "Облачно", "temperature_c": 6, "wind_speed_ms": 3, "wind_gust_ms": 6, "wind_direction": "Ю" },
+        "1794063600": { "timestamp": 1794063600, "time": "18:00", "sky": "Пасмурно", "temperature_c": 4, "wind_speed_ms": 2, "wind_gust_ms": 5, "wind_direction": "ЮВ" },
+        "1794074400": { "timestamp": 1794074400, "time": "21:00", "sky": "Облачно", "temperature_c": 3, "wind_speed_ms": 2, "wind_gust_ms": 4, "wind_direction": "В" }
+      }
+    },
+    "tomorrow": {
+      "label": "Погода завтра",
+      "source_url": "https://www.gismeteo.ru/weather-gorodets-4334/tomorrow/",
+      "hours": {
+        "1794085200": { "timestamp": 1794085200, "time": "0:00", "sky": "Пасмурно", "temperature_c": 2, "wind_speed_ms": 2, "wind_gust_ms": 5, "wind_direction": "В" },
+        "1794096000": { "timestamp": 1794096000, "time": "3:00", "sky": "Облачно", "temperature_c": 1, "wind_speed_ms": 2, "wind_gust_ms": 4, "wind_direction": "СВ" },
+        "1794106800": { "timestamp": 1794106800, "time": "6:00", "sky": "Небольшой снег", "temperature_c": 0, "wind_speed_ms": 3, "wind_gust_ms": 6, "wind_direction": "С" },
+        "1794117600": { "timestamp": 1794117600, "time": "9:00", "sky": "Облачно", "temperature_c": 1, "wind_speed_ms": 3, "wind_gust_ms": 6, "wind_direction": "СЗ" },
+        "1794128400": { "timestamp": 1794128400, "time": "12:00", "sky": "Переменная облачность", "temperature_c": 3, "wind_speed_ms": 4, "wind_gust_ms": 7, "wind_direction": "З" },
+        "1794139200": { "timestamp": 1794139200, "time": "15:00", "sky": "Облачно", "temperature_c": 4, "wind_speed_ms": 3, "wind_gust_ms": 6, "wind_direction": "ЮЗ" },
+        "1794150000": { "timestamp": 1794150000, "time": "18:00", "sky": "Облачно", "temperature_c": 2, "wind_speed_ms": 2, "wind_gust_ms": 5, "wind_direction": "Ю" },
+        "1794160800": { "timestamp": 1794160800, "time": "21:00", "sky": "Пасмурно", "temperature_c": 1, "wind_speed_ms": 2, "wind_gust_ms": 4, "wind_direction": "ЮВ" }
+      }
+    }
+  }
+}
