@@ -8,21 +8,21 @@ Python 3.12-парсер прогноза погоды в Городце с Gism
 
 | Раздел | Страница | Разрешение |
 |---|---|---|
-| \`today\` — «Погода сегодня» | https://www.gismeteo.ru/weather-gorodets-4334/ | Почасовой |
-| \`tomorrow\` — «Погода завтра» | https://www.gismeteo.ru/weather-gorodets-4334/tomorrow/ | Почасовой |
-| \`10_days\` — «Погода 10 дней» | https://www.gismeteo.ru/weather-gorodets-4334/10-days/ | По дням, 10 записей |
-| \`2_weeks\` — «Погода 2 недели» | https://www.gismeteo.ru/weather-gorodets-4334/2-weeks/ | По дням, 14 записей |
+| `today` — «Погода сегодня» | https://www.gismeteo.ru/weather-gorodets-4334/ | Почасовой |
+| `tomorrow` — «Погода завтра» | https://www.gismeteo.ru/weather-gorodets-4334/tomorrow/ | Почасовой |
+| `10_days` — «Погода 10 дней» | https://www.gismeteo.ru/weather-gorodets-4334/10-days/ | По дням, 10 записей |
+| `2_weeks` — «Погода 2 недели» | https://www.gismeteo.ru/weather-gorodets-4334/2-weeks/ | По дням, 14 записей |
 
-Для дневных страниц извлекаются дата, состояние неба, температура (одно значение или минимум/максимум), скорость ветра, порывы и направление ветра. Дата строится по Unix timestamp в часовом поясе \`Europe/Moscow\`.
+Для дневных страниц извлекаются дата, состояние неба, температура (одно значение или минимум/максимум), скорость ветра, порывы и направление ветра. Дата строится по Unix timestamp в часовом поясе `Europe/Moscow`.
 
 ## Структура JSON
 
-Все четыре прогноза записываются в \`data/weather.json\`. Почасовые записи хранятся в \`hours\`, дневные — в \`days\`. Тип данных дополнительно указан в поле \`resolution\`:
+Все четыре прогноза записываются в `data/weather.json`. Почасовые записи хранятся в `hours`, дневные — в `days`. Тип данных дополнительно указан в поле `resolution`:
 
-- \`forecasts.today.hours\`
-- \`forecasts.tomorrow.hours\`
-- \`forecasts.10_days.days\`
-- \`forecasts.2_weeks.days\`
+- `forecasts.today.hours`
+- `forecasts.tomorrow.hours`
+- `forecasts.10_days.days`
+- `forecasts.2_weeks.days`
 
 Данные каждого периода имеют собственные подпись и URL источника. Дневные и почасовые записи не смешиваются.
 
@@ -39,7 +39,7 @@ python -m pip install -r requirements.txt
 python main.py
 ~~~
 
-Для уже склонированного проекта вместо \`git clone\` выполните \`git pull origin main\`.
+Для уже склонированного проекта вместо `git clone` выполните `git pull origin main`.
 
 ## Тесты парсера
 
@@ -51,7 +51,7 @@ python -m unittest discover -s tests -v
 
 ## HTML/CSS-интерфейс
 
-После запуска \`python main.py\` запустите локальный веб-сервер:
+После запуска `python main.py` запустите локальный веб-сервер:
 
 ~~~powershell
 python -m http.server 8000
@@ -76,12 +76,12 @@ python -m playwright install chromium
 python scripts/render_weather.py
 ~~~
 
-Файлы появятся в \`output\`:
+Файлы появятся в `output`:
 
-- \`weather_today.png\`
-- \`weather_tomorrow.png\`
-- \`weather_10_days.png\`
-- \`weather_2_weeks.png\`
+- `weather_today.png`
+- `weather_tomorrow.png`
+- `weather_10_days.png`
+- `weather_2_weeks.png`
 
 Только для просмотра макета на демонстрационных данных:
 
@@ -89,7 +89,7 @@ python scripts/render_weather.py
 python scripts/render_weather.py --demo
 ~~~
 
-\`web/demo_weather.json\` содержит вымышленные значения и помечается в интерфейсе как демо. Для фактических прогнозов используйте JSON, созданный \`python main.py\`.
+`web/demo_weather.json` содержит вымышленные значения и помечается в интерфейсе как демо. Для фактических прогнозов используйте JSON, созданный `python main.py`.
 
 ## Структура проекта
 
