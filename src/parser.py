@@ -1,5 +1,6 @@
 """Извлечение почасового и дневного прогноза из погодного виджета Gismeteo."""
-from datetime import datetime, timezone
+import re
+from datetime import date as Date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup, Tag
@@ -69,26 +70,115 @@ def _row_cells(row: Tag, expected: int, label: str) -> list[Tag]:
     )
 
 
-def _timestamp_from_cell(cell: Tag, index: int) -> int:
+_RUSSIAN_MONTHS = {
+    "янв": 1, "январь": 1, "января": 1,
+    "фев": 2, "февраль": 2, "февраля": 2,
+    "мар": 3, "март": 3, "марта": 3,
+    "апр": 4, "апрель": 4, "апреля": 4,
+    "май": 5, "мая": 5,
+    "июн": 6, "июнь": 6, "июня": 6,
+    "июл": 7, "июль": 7, "июля": 7,
+    "авг": 8, "август": 8, "августа": 8,
+    "сен": 9, "сент": 9, "сентябрь": 9, "сентября": 9,
+    "окт": 10, "октябрь": 10, "октября": 10,
+    "ноя": 11, "нояб": 11, "ноябрь": 11, "ноября": 11,
+    "дек": 12, "декабрь": 12, "декабря": 12,
+}
+
+
+def _today_local_date() -> Date:
+    """Текущая календарная дата по часовому поясу города прогноза."""
+    return datetime.now(FORECAST_TIMEZONE).date()
+
+
+def _date_from_cell(cell: Tag, index: int, previous_date: Date | None) -> Date:
+    """Получить календарную дату из timestamp либо видимой подписи Gismeteo."""
     node = cell if cell.has_attr("timestamp") else cell.select_one("[timestamp]")
-    raw = node.get("timestamp") if node else cell.get("data-timestamp")
-    if raw is None:
-        time_node = cell.select_one("time[datetime]")
-        raw = time_node.get("datetime") if time_node else None
-        if raw:
-            try:
-                parsed = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
-                if parsed.tzinfo is None:
-                    parsed = parsed.replace(tzinfo=FORECAST_TIMEZONE)
-                return int(parsed.timestamp())
-            except ValueError:
-                raw = None
-    try:
-        return int(raw)
-    except (TypeError, ValueError) as exc:
+    raw_timestamp = node.get("timestamp") if node else cell.get("data-timestamp")
+    if raw_timestamp is not None:
+        try:
+            return datetime.fromtimestamp(
+                int(raw_timestamp), tz=timezone.utc
+            ).astimezone(FORECAST_TIMEZONE).date()
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"Для дневной точки №{index + 1} указан некорректный timestamp."
+            ) from exc
+
+    time_node = cell.select_one("time[datetime]")
+    raw_datetime = time_node.get("datetime") if time_node else None
+    if raw_datetime:
+        try:
+            parsed = datetime.fromisoformat(str(raw_datetime).replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=FORECAST_TIMEZONE)
+            return parsed.astimezone(FORECAST_TIMEZONE).date()
+        except ValueError as exc:
+            raise ValueError(
+                f"Для дневной точки №{index + 1} указана некорректная дата."
+            ) from exc
+
+    date_node = cell.select_one(".date")
+    raw_date = (date_node or cell).get_text(" ", strip=True).lower()
+    match = re.search(r"(?P<day>\d{1,2})(?:\s+(?P<month>[а-яё]+)\.?)?", raw_date)
+    if match is None:
         raise ValueError(
-            f"Для дневной точки №{index + 1} отсутствует корректный Unix timestamp."
-        ) from exc
+            f"Не удалось прочитать дату дневной точки №{index + 1}: {raw_date!r}."
+        )
+
+    day = int(match.group("day"))
+    month_text = (match.group("month") or "").rstrip(".")
+    month = _RUSSIAN_MONTHS.get(month_text) if month_text else None
+    if month_text and month is None:
+        raise ValueError(
+            f"Неизвестное название месяца в дате дневной точки №{index + 1}: "
+            f"{month_text!r}."
+        )
+
+    if previous_date is not None:
+        expected_date = previous_date + timedelta(days=1)
+        if month is None:
+            candidate = expected_date
+        else:
+            try:
+                candidate = Date(expected_date.year, month, day)
+                if candidate < expected_date:
+                    candidate = Date(expected_date.year + 1, month, day)
+            except ValueError as exc:
+                raise ValueError(
+                    f"Некорректная дата дневной точки №{index + 1}: {raw_date!r}."
+                ) from exc
+
+        if candidate != expected_date:
+            raise ValueError(
+                f"Нарушена последовательность дат прогноза: ожидалась "
+                f"{expected_date.isoformat()}, получено {candidate.isoformat()}."
+            )
+        return candidate
+
+    if month is not None:
+        today = _today_local_date()
+        candidates = []
+        for year in (today.year - 1, today.year, today.year + 1):
+            try:
+                candidates.append(Date(year, month, day))
+            except ValueError:
+                continue
+        if not candidates:
+            raise ValueError(f"Некорректная первая дата прогноза: {raw_date!r}.")
+        return min(candidates, key=lambda candidate: abs((candidate - today).days))
+
+    today = _today_local_date()
+    nearby_dates = [
+        today + timedelta(days=offset)
+        for offset in range(-14, 15)
+        if (today + timedelta(days=offset)).day == day
+    ]
+    if not nearby_dates:
+        raise ValueError(
+            f"Не удалось определить месяц первой даты прогноза: {raw_date!r}."
+        )
+    return min(nearby_dates, key=lambda candidate: abs((candidate - today).days))
 
 
 def _temperature_groups(row: Tag, day_count: int) -> list[list[float]]:
@@ -233,7 +323,7 @@ def parse_daily_weather_widget(
     widget = _widget(page_soup)
     date_row = _required_row(
         widget,
-        (".widget-row-datetime-date", ".widget-row-datetime-time", '[data-row="date"]'),
+        (".widget-row-date", ".widget-row-datetime-date", ".widget-row-datetime-time", '[data-row="date"]'),
         "даты прогноза",
     )
     date_cells = date_row.select(":scope > .row-item")
@@ -256,8 +346,18 @@ def parse_daily_weather_widget(
     temp_groups = _temperature_groups(temp_row, expected_days)
 
     forecast: WeatherByDate = {}
+    previous_date: Date | None = None
     for index, date_cell in enumerate(date_cells):
-        timestamp = _timestamp_from_cell(date_cell, index)
+        forecast_date = _date_from_cell(date_cell, index, previous_date)
+        previous_date = forecast_date
+        timestamp = int(
+            datetime(
+                forecast_date.year,
+                forecast_date.month,
+                forecast_date.day,
+                tzinfo=FORECAST_TIMEZONE,
+            ).timestamp()
+        )
         if timestamp in forecast:
             raise ValueError(f"Повторяющаяся дата прогноза: {_local_date(timestamp)}")
 
