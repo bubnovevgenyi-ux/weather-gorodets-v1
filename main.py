@@ -1,6 +1,7 @@
 """Загрузка почасовых и дневных прогнозов Gismeteo для Городца."""
 
 import sys
+from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
@@ -10,11 +11,14 @@ from src.storage import save_forecasts_json
 
 BASE_URL = "https://www.gismeteo.ru/weather-gorodets-4334/"
 REQUEST_TIMEOUT = 15
+HTML_BACKUP_DIR = Path("data/html_backup")
 HEADERS = {
+    "Accept": "*/*",
     "User-Agent": (
-        "Mozilla/5.0 (compatible; WeatherGorodetsParser/1.0; "
-        "+https://github.com/bubnovevgenyi-ux/weather-gorodets-v1)"
-    )
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/152.0.0.0 YaBrowser/26.10.0.0 Safari/537.36"
+    ),
 }
 
 FORECAST_PAGES = (
@@ -25,14 +29,65 @@ FORECAST_PAGES = (
 )
 
 
-def download_page(session: requests.Session, url: str) -> bytes:
-    """Загрузить HTML-страницу в общей HTTP-сессии."""
+def _save_html_backup(html: bytes, destination: Path) -> None:
+    """Атомарно сохранить HTML, не повреждая предыдущую копию при сбое записи."""
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary_file = destination.with_suffix(destination.suffix + ".tmp")
+    try:
+        temporary_file.write_bytes(html)
+        temporary_file.replace(destination)
+    except OSError:
+        try:
+            temporary_file.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
+
+
+def download_page(
+    session: requests.Session,
+    url: str,
+    backup_path: Path,
+) -> bytes:
+    """Загрузить HTML и сохранить копию; при сетевой ошибке использовать кэш."""
     try:
         response = session.get(url, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
+        html = response.content
+        if not html:
+            raise requests.RequestException("Сервер вернул пустой ответ.")
     except requests.RequestException as exc:
-        raise RuntimeError(f"Не удалось загрузить страницу {url}: {exc}") from exc
-    return response.content
+        try:
+            cached_html = backup_path.read_bytes()
+        except OSError as cache_exc:
+            raise RuntimeError(
+                f"Не удалось загрузить страницу {url}: {exc}. "
+                f"Резервная копия {backup_path} недоступна: {cache_exc}"
+            ) from exc
+
+        if not cached_html:
+            raise RuntimeError(
+                f"Не удалось загрузить страницу {url}: {exc}. "
+                f"Резервная копия {backup_path} пуста."
+            ) from exc
+
+        print(
+            f"Предупреждение: {url} недоступна ({exc}). "
+            f"Используется сохранённая копия: {backup_path}",
+            file=sys.stderr,
+        )
+        return cached_html
+
+    try:
+        _save_html_backup(html, backup_path)
+    except OSError as exc:
+        raise RuntimeError(
+            f"Страница загружена, но не удалось сохранить её копию "
+            f"в {backup_path}: {exc}"
+        ) from exc
+
+    print(f"HTML сохранён: {backup_path}")
+    return html
 
 
 def _print_hourly_forecast(label: str, forecast: dict) -> None:
@@ -76,7 +131,8 @@ def main() -> int:
             session.headers.update(HEADERS)
 
             for period, label, url, resolution, expected_count in FORECAST_PAGES:
-                html = download_page(session, url)
+                backup_path = HTML_BACKUP_DIR / f"{period}.html"
+                html = download_page(session, url, backup_path)
                 soup = BeautifulSoup(html, "lxml")
                 title_tag = soup.find("title")
                 page_titles[period] = (
