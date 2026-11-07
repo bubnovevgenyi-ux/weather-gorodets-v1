@@ -103,22 +103,26 @@ def _temperature_groups(row: Tag, day_count: int) -> list[list[float]]:
             cells = candidate
             break
 
-    if cells is not None:
+    for candidate in (direct_cells, chart_cells, chart_cells_alt):
+        if len(candidate) != day_count:
+            continue
         groups = []
-        for index, cell in enumerate(cells):
+        candidate_is_complete = True
+        for cell in candidate:
             value_tags = cell.select("temperature-value[value]")
             if not value_tags and cell.name == "temperature-value":
                 value_tags = [cell]
             if not value_tags:
-                # В некоторых вариантах строки подписи лежат непосредственно в .value.
                 value_tags = [
                     tag for tag in cell.select(".value")
                     if tag.get("value") is not None
                 ]
             if not value_tags:
-                raise ValueError(f"Не найдена температура для дня №{index + 1}.")
+                candidate_is_complete = False
+                break
             groups.append([_number_from_tag(tag, "температура") for tag in value_tags])
-        return groups
+        if candidate_is_complete:
+            return groups
 
     value_tags = row.select("temperature-value[value]")
     if not value_tags:
