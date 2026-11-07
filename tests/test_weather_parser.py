@@ -3,7 +3,10 @@
 import json
 import tempfile
 import unittest
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
 
@@ -34,27 +37,43 @@ def make_hourly_page(timestamp: int, temperature: int = 1) -> BeautifulSoup:
 
 
 def make_daily_page(start_timestamp: int, days: int) -> BeautifulSoup:
+    start_date = datetime.fromtimestamp(
+        start_timestamp, tz=timezone.utc
+    ).astimezone(ZoneInfo("Europe/Moscow")).date()
+    month_labels = (
+        "янв", "фев", "мар", "апр", "май", "июн",
+        "июл", "авг", "сен", "окт", "нояб", "дек",
+    )
     dates = []
     skies = []
     temperatures = []
     winds = []
     for index in range(days):
-        timestamp = start_timestamp + index * 86400
-        dates.append(
-            f'<div class="row-item"><time-value timestamp="{timestamp}" format="D d MMM"></time-value></div>'
+        forecast_date = start_date + timedelta(days=index)
+        date_label = (
+            f"{forecast_date.day} {month_labels[forecast_date.month - 1]}"
+            if index == 0
+            else str(forecast_date.day)
         )
-        skies.append(f'<div class="row-item" data-tooltip="облачно, день {index + 1}"></div>')
+        dates.append(
+            '<a class="row-item link link-hover" href="#">'
+            f'<div class="day">день</div><div class="date">{date_label}</div>'
+            '</a>'
+        )
+        skies.append(
+            f'<div class="row-item" data-tooltip="облачно, день {index + 1}"></div>'
+        )
         low, high = -2 + index % 4, 3 + index % 5
         temperatures.append(
-            '<div class="row-item">'
-            f'<temperature-value value="{low}">{low}</temperature-value>'
-            f'<temperature-value value="{high}">{high}</temperature-value>'
+            '<div class="value">'
+            f'<div class="maxt"><temperature-value value="{high}">+{high}</temperature-value></div>'
+            f'<div class="mint"><temperature-value value="{low}">{low}</temperature-value></div>'
             '</div>'
         )
         winds.append(
             '<div class="row-item">'
-            '<div class="wind-speed"><speed-value value="2">2</speed-value></div>'
-            '<div class="wind-gust"><speed-value value="6">6</speed-value></div>'
+            '<div class="wind-value wind-speed"><speed-value value="2">2</speed-value></div>'
+            '<div class="wind-value wind-gust"><speed-value value="6">6</speed-value></div>'
             '<div class="wind-direction">СЗ</div>'
             '</div>'
         )
@@ -62,15 +81,16 @@ def make_daily_page(start_timestamp: int, days: int) -> BeautifulSoup:
     html = f"""
     <html><body>
       <div data-widget="weather-parameters">
-        <div class="widget-row widget-row-datetime-date">{''.join(dates)}</div>
-        <div data-row="icon-tooltip">{''.join(skies)}</div>
-        <div data-row="temperature-air">{''.join(temperatures)}</div>
-        <div data-row="wind">{''.join(winds)}</div>
+        <div class="widget-row widget-row-date">{''.join(dates)}</div>
+        <div class="widget-row widget-row-icon" data-row="icon-tooltip">{''.join(skies)}</div>
+        <div class="widget-row widget-row-chart" data-row="temperature-air">
+          <div class="chart"><div class="values">{''.join(temperatures)}</div></div>
+        </div>
+        <div class="widget-row widget-row-wind" data-row="wind">{''.join(winds)}</div>
       </div>
     </body></html>
     """
     return BeautifulSoup(html, "lxml")
-
 
 class WeatherParserTests(unittest.TestCase):
     def test_hourly_forecast_time_comes_from_timestamp(self) -> None:
@@ -81,7 +101,10 @@ class WeatherParserTests(unittest.TestCase):
 
     def test_daily_parser_returns_exactly_ten_days(self) -> None:
         timestamp = 1793998800
-        forecast = parse_daily_weather_widget(make_daily_page(timestamp, 10), expected_days=10)
+        with patch("src.parser._today_local_date", return_value=date(2026, 11, 7)):
+            forecast = parse_daily_weather_widget(
+                make_daily_page(timestamp, 10), expected_days=10
+            )
         self.assertEqual(len(forecast), 10)
         record = forecast[timestamp]
         self.assertEqual(record.temperature_min_c, -2.0)
@@ -91,15 +114,23 @@ class WeatherParserTests(unittest.TestCase):
 
     def test_daily_parser_returns_exactly_fourteen_days(self) -> None:
         timestamp = 1793998800
-        forecast = parse_daily_weather_widget(make_daily_page(timestamp, 14), expected_days=14)
+        with patch("src.parser._today_local_date", return_value=date(2026, 11, 7)):
+            forecast = parse_daily_weather_widget(
+                make_daily_page(timestamp, 14), expected_days=14
+            )
         self.assertEqual(len(forecast), 14)
         self.assertEqual(list(forecast.values())[0].date, "2026-11-07")
 
     def test_json_saves_hourly_and_daily_sections_separately(self) -> None:
         timestamp = 1793998800
         hourly = parse_weather_widget(make_hourly_page(1793912400))
-        ten_days = parse_daily_weather_widget(make_daily_page(timestamp, 10), expected_days=10)
-        two_weeks = parse_daily_weather_widget(make_daily_page(timestamp, 14), expected_days=14)
+        with patch("src.parser._today_local_date", return_value=date(2026, 11, 7)):
+            ten_days = parse_daily_weather_widget(
+                make_daily_page(timestamp, 10), expected_days=10
+            )
+            two_weeks = parse_daily_weather_widget(
+                make_daily_page(timestamp, 14), expected_days=14
+            )
 
         with tempfile.TemporaryDirectory() as temp_dir:
             output = Path(temp_dir) / "weather.json"
