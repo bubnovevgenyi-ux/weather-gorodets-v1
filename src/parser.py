@@ -138,6 +138,11 @@ def _date_from_cell(cell: Tag, index: int, previous_date: Date | None) -> Date:
     if previous_date is not None:
         expected_date = previous_date + timedelta(days=1)
         if month is None:
+            if day != expected_date.day:
+                raise ValueError(
+                    f"Нарушена последовательность дат прогноза: ожидался день "
+                    f"{expected_date.day}, получено {day}."
+                )
             candidate = expected_date
         else:
             try:
