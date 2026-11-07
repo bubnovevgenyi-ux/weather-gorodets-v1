@@ -5,7 +5,6 @@ import sys
 import requests
 from bs4 import BeautifulSoup
 
-from src.models import DailyWeather
 from src.parser import parse_daily_weather_widget, parse_weather_widget
 from src.storage import save_forecasts_json
 

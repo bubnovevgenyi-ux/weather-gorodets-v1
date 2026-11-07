@@ -97,12 +97,6 @@ def _temperature_groups(row: Tag, day_count: int) -> list[list[float]]:
     chart_cells = row.select(".chart .values .value")
     chart_cells_alt = row.select(".values > .value")
 
-    cells: list[Tag] | None = None
-    for candidate in (direct_cells, chart_cells, chart_cells_alt):
-        if len(candidate) == day_count:
-            cells = candidate
-            break
-
     for candidate in (direct_cells, chart_cells, chart_cells_alt):
         if len(candidate) != day_count:
             continue
