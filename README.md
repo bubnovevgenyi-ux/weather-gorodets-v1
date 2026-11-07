@@ -1,28 +1,32 @@
 # weather-gorodets-v1
 
-Python-парсер прогноза погоды в Городце с Gismeteo. Запуск — локально на Python 3.12, без Docker.
+Python 3.12-парсер прогноза погоды в Городце с Gismeteo. Запуск локально, без Docker.
 
-## Что извлекается
+## Источники прогнозов
 
-Программа загружает две страницы Gismeteo:
+Программа загружает четыре страницы:
 
-- Сегодня: https://www.gismeteo.ru/weather-gorodets-4334/
-- Завтра: https://www.gismeteo.ru/weather-gorodets-4334/tomorrow/
+| Раздел | Страница | Разрешение |
+|---|---|---|
+| \`today\` — «Погода сегодня» | https://www.gismeteo.ru/weather-gorodets-4334/ | Почасовой |
+| \`tomorrow\` — «Погода завтра» | https://www.gismeteo.ru/weather-gorodets-4334/tomorrow/ | Почасовой |
+| \`10_days\` — «Погода 10 дней» | https://www.gismeteo.ru/weather-gorodets-4334/10-days/ | По дням, 10 записей |
+| \`2_weeks\` — «Погода 2 недели» | https://www.gismeteo.ru/weather-gorodets-4334/2-weeks/ | По дням, 14 записей |
 
-Для каждой страницы парсер находит погодный виджет и извлекает время прогноза, Unix timestamp, состояние неба, температуру, скорость ветра, порывы и направление ветра.
+Для дневных страниц извлекаются дата, состояние неба, температура (одно значение или минимум/максимум), скорость ветра, порывы и направление ветра. Дата строится по Unix timestamp в часовом поясе \`Europe/Moscow\`.
 
-Время формируется из Unix timestamp в часовом поясе Городца (Europe/Moscow). Изображения не сохраняются в погодных данных.
+## Структура JSON
 
-## Структура данных
+Все четыре прогноза записываются в \`data/weather.json\`. Почасовые записи хранятся в \`hours\`, дневные — в \`days\`. Тип данных дополнительно указан в поле \`resolution\`:
 
-Оба прогноза сохраняются в data/weather.json в отдельных разделах:
+- \`forecasts.today.hours\`
+- \`forecasts.tomorrow.hours\`
+- \`forecasts.10_days.days\`
+- \`forecasts.2_weeks.days\`
 
-- forecasts.today — «Погода сегодня»;
-- forecasts.tomorrow — «Погода завтра».
+Данные каждого периода имеют собственные подпись и URL источника. Дневные и почасовые записи не смешиваются.
 
-Часовые записи индексируются по Unix timestamp.
-
-## Установка и запуск парсера (Windows PowerShell)
+## Установка и запуск (Windows PowerShell)
 
 ~~~powershell
 py -3.12 --version
@@ -35,49 +39,57 @@ python -m pip install -r requirements.txt
 python main.py
 ~~~
 
-Для уже склонированного проекта вместо git clone выполните git pull origin main.
+Для уже склонированного проекта вместо \`git clone\` выполните \`git pull origin main\`.
 
-## Графическая HTML/CSS-форма
+## Тесты парсера
 
-После запуска python main.py откройте корень проекта в локальном веб-сервере:
+~~~powershell
+python -m unittest discover -s tests -v
+~~~
+
+Тестовые HTML-фрагменты проверяют 10 и 14 дневных записей и разделение почасового/дневного JSON. Они не заменяют контрольную проверку на HTML, фактически возвращаемом Gismeteo.
+
+## HTML/CSS-интерфейс
+
+После запуска \`python main.py\` запустите локальный веб-сервер:
 
 ~~~powershell
 python -m http.server 8000
 ~~~
 
-Перейдите в браузере по адресу:
+Откройте http://127.0.0.1:8000/web/.
 
-http://127.0.0.1:8000/web/
+В интерфейсе есть четыре вкладки: «Сегодня», «Завтра», «10 дней» и «2 недели». Для первых двух отображаются почасовые карточки, для двух последних — календарные дневные карточки.
 
-Страница отображает две вкладки — «Сегодня» и «Завтра», временные карточки, температуру, состояние неба, ветер, порывы и график изменения температуры. Значки погоды рисуются inline SVG на основе текстового состояния неба; никаких картинок в JSON нет.
+## Экспорт в PNG
 
-## Экспорт графической формы в PNG
-
-Установите дополнительную зависимость для снимков страницы:
+Установите дополнительные инструменты:
 
 ~~~powershell
 python -m pip install -r requirements-render.txt
 python -m playwright install chromium
 ~~~
 
-Создайте два PNG-файла на основе актуального data/weather.json:
+Сохраните PNG для всех четырёх периодов:
 
 ~~~powershell
 python scripts/render_weather.py
 ~~~
 
-Файлы появятся в каталоге output:
+Файлы появятся в \`output\`:
 
-- output/weather_today.png
-- output/weather_tomorrow.png
+- \`weather_today.png\`
+- \`weather_tomorrow.png\`
+- \`weather_10_days.png\`
+- \`weather_2_weeks.png\`
 
-Для предварительного просмотра оформления на демонстрационных, неактуальных значениях:
+Только для просмотра макета на демонстрационных данных:
 
 ~~~powershell
 python scripts/render_weather.py --demo
 ~~~
 
-Демонстрационный JSON лежит в web/demo_weather.json и помечен в интерфейсе как пример. Для реального отображения и экспорта не используйте --demo.
+\`web/demo_weather.json\` содержит вымышленные значения и помечается в интерфейсе как демо. Для фактических прогнозов используйте JSON, созданный \`python main.py\`.
 
 ## Структура проекта
 
@@ -91,6 +103,8 @@ weather-gorodets-v1/
 │   ├── models.py
 │   ├── parser.py
 │   └── storage.py
+├── tests/
+│   └── test_weather_parser.py
 ├── scripts/
 │   └── render_weather.py
 ├── web/
@@ -101,6 +115,4 @@ weather-gorodets-v1/
 ├── data/
 │   └── weather.json
 └── output/
-    ├── weather_today.png
-    └── weather_tomorrow.png
 ~~~

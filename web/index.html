@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#1477c9">
-  <title>Погода в Городце — почасовой прогноз</title>
+  <title>Погода в Городце — прогноз</title>
   <link rel="stylesheet" href="styles.css">
   <script src="app.js" defer></script>
 </head>
@@ -15,28 +15,27 @@
         <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 52"><path d="M15 42h35a11 11 0 0 0 1-22 17 17 0 0 0-32-3 13 13 0 0 0-4 25Z" fill="#fff"/></svg></span>
         <span class="brand-copy"><strong>ПОГОДА</strong><small>ГОРОДЕЦ</small></span>
       </a>
-      <div class="topbar-meta">
-        <span class="live-dot"></span>
-        <span>Прогноз по данным Gismeteo</span>
-      </div>
+      <div class="topbar-meta"><span class="live-dot"></span><span>Прогноз по данным Gismeteo</span></div>
     </header>
 
     <section class="intro" id="top">
       <div>
         <div class="eyebrow">НИЖЕГОРОДСКАЯ ОБЛАСТЬ</div>
         <h1>Погода в Городце</h1>
-        <p class="intro-note">Подробный прогноз по времени: небо, температура и ветер</p>
+        <p class="intro-note">Почасовой и дневной прогноз: небо, температура и ветер</p>
       </div>
       <div class="updated" id="updatedAt">Обновление прогноза</div>
     </section>
 
     <section class="forecast-card" aria-label="Погодный прогноз">
       <div class="card-head">
-        <div class="period-tabs" role="tablist" aria-label="Выбор дня">
+        <div class="period-tabs" role="tablist" aria-label="Период прогноза">
           <button class="period-tab active" id="tab-today" role="tab" aria-selected="true" aria-controls="forecastPanel" data-period="today">Сегодня</button>
           <button class="period-tab" id="tab-tomorrow" role="tab" aria-selected="false" aria-controls="forecastPanel" data-period="tomorrow">Завтра</button>
+          <button class="period-tab" id="tab-10-days" role="tab" aria-selected="false" aria-controls="forecastPanel" data-period="10_days">10 дней</button>
+          <button class="period-tab" id="tab-2-weeks" role="tab" aria-selected="false" aria-controls="forecastPanel" data-period="2_weeks">2 недели</button>
         </div>
-        <div class="card-source"><span class="source-dot"></span> Почасовой прогноз</div>
+        <div class="card-source"><span class="source-dot"></span><span id="cardSourceText">Почасовой прогноз</span></div>
       </div>
 
       <div id="forecastPanel" role="tabpanel" aria-labelledby="tab-today">
@@ -59,7 +58,7 @@
         </div>
 
         <div class="section-heading">
-          <div><span class="section-kicker">ПО ВРЕМЕНИ</span><h2>Изменение погоды</h2></div>
+          <div><span class="section-kicker" id="sectionKicker">ПО ВРЕМЕНИ</span><h2 id="sectionTitle">Изменение погоды</h2></div>
           <span class="point-count" id="pointCount">— временных точек</span>
         </div>
 
@@ -68,7 +67,7 @@
         </div>
 
         <div class="chart-block">
-          <div class="chart-title"><span>Температура воздуха</span><strong>°C</strong></div>
+          <div class="chart-title"><span id="chartTitle">Температура воздуха</span><strong>°C</strong></div>
           <div class="chart-area" id="temperatureChart" aria-label="График температуры"></div>
         </div>
 
@@ -91,12 +90,12 @@
       <div class="empty-state" id="emptyState" hidden>
         <div class="empty-icon">☁</div>
         <h2>Пока нет данных прогноза</h2>
-        <p>Сначала запустите парсер Python. Он загрузит прогноз на сегодня и завтра и сохранит его в <code>data/weather.json</code>.</p>
+        <p>Сначала запустите парсер Python. Он загрузит прогнозы Gismeteo и сохранит их в <code>data/weather.json</code>.</p>
       </div>
     </section>
 
     <footer class="footer">
-      <span>Время указано по Городцу · Europe/Moscow</span>
+      <span>Время и даты указаны по Городцу · Europe/Moscow</span>
       <a href="https://www.gismeteo.ru/weather-gorodets-4334/" target="_blank" rel="noopener">Источник: Gismeteo ↗</a>
     </footer>
     <div class="demo-ribbon" id="demoRibbon" hidden>ДЕМО-ПРЕДПРОСМОТР · ДАННЫЕ ПРИМЕРНЫЕ</div>
