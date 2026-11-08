@@ -10,11 +10,19 @@ from typing import Any
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from dotenv import load_dotenv
 
 from src.collector import HTML_BACKUP_DIR, WEATHER_JSON_PATH, collect_forecasts
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 WEB_DIR = PROJECT_ROOT / "web"
+ENV_FILE = PROJECT_ROOT / ".env"
+
+
+def _get_refresh_token() -> str | None:
+    """Прочитать токен из окружения или локального .env; окружение имеет приоритет."""
+    load_dotenv(dotenv_path=ENV_FILE, override=False)
+    return os.getenv("WEATHER_API_REFRESH_TOKEN") or None
 REFRESH_LOCK = threading.Lock()
 PERIODS = ("today", "tomorrow", "10_days", "2_weeks")
 
@@ -74,6 +82,8 @@ def health() -> dict[str, Any]:
             "status": "not_initialized",
             "forecast_available": False,
             "cached_html_pages": cached_pages,
+        "refresh_enabled": bool(_get_refresh_token()),
+            "refresh_enabled": bool(_get_refresh_token()),
         }
 
     return {
@@ -132,11 +142,15 @@ def refresh_forecast(
     x_refresh_token: str | None = Header(default=None, alias="X-Refresh-Token"),
 ) -> dict[str, Any]:
     """Обновить данные; доступ только при настроенном WEATHER_API_REFRESH_TOKEN."""
-    expected_token = os.getenv("WEATHER_API_REFRESH_TOKEN")
+    expected_token = _get_refresh_token()
     if not expected_token:
         raise HTTPException(
             status_code=503,
-            detail="Обновление через API отключено. Настройте WEATHER_API_REFRESH_TOKEN.",
+            detail=(
+                "Обновление через API отключено: токен не найден. "
+                "Создайте файл .env в корне проекта, задайте "
+                "WEATHER_API_REFRESH_TOKEN=ваш_секретный_токен и перезапустите сервер."
+            ),
         )
     if not x_refresh_token or not secrets.compare_digest(x_refresh_token, expected_token):
         raise HTTPException(status_code=401, detail="Неверный или отсутствующий X-Refresh-Token.")
