@@ -136,5 +136,51 @@ class WeatherApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
 
 
+    def test_health_exposes_refresh_configuration_without_secret(self) -> None:
+        with patch.dict(os.environ, {}, clear=True):
+            response = self.client.get("/api/v1/health")
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()["refresh_enabled"])
+
+    def test_refresh_token_is_loaded_from_dotenv_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            env_file = Path(temp_dir) / ".env"
+            env_file.write_text(
+                "WEATHER_API_REFRESH_TOKEN=dotenv-test-token\\n",
+                encoding="utf-8",
+            )
+            with patch.object(api, "ENV_FILE", env_file):
+                with patch.dict(os.environ, {}, clear=True):
+                    self.assertEqual(api._get_refresh_token(), "dotenv-test-token")
+
+    def test_refresh_accepts_token_from_dotenv_file(self) -> None:
+        payload = self.write_payload()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            env_file = Path(temp_dir) / ".env"
+            env_file.write_text(
+                "WEATHER_API_REFRESH_TOKEN=dotenv-test-token\\n",
+                encoding="utf-8",
+            )
+            with patch.object(api, "ENV_FILE", env_file):
+                with patch.dict(os.environ, {}, clear=True):
+                    with patch.object(api, "collect_forecasts") as collect:
+                        response = self.client.post(
+                            "/api/v1/refresh",
+                            headers={"X-Refresh-Token": "dotenv-test-token"},
+                        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), payload)
+        collect.assert_called_once()
+
+    def test_refresh_without_token_has_actionable_error(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            env_file = Path(temp_dir) / ".env"
+            with patch.object(api, "ENV_FILE", env_file):
+                with patch.dict(os.environ, {}, clear=True):
+                    response = self.client.post("/api/v1/refresh")
+        self.assertEqual(response.status_code, 503)
+        self.assertIn(".env", response.json()["detail"])
+
+
 if __name__ == "__main__":
     unittest.main()
