@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1477c9">
+  <title>Документация API — Погода в Городце</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --blue: #1478c8;
+      --ink: #18324c;
+      --muted: #71869a;
+      --line: #e5edf4;
+      --canvas: #f2f6fa;
+      --surface: #fff;
+      --code: #102538;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: radial-gradient(ellipse at 85% 0, rgba(45,157,232,.12), transparent 34rem), var(--canvas);
+      font-family: Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+      line-height: 1.6;
+    }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .shell { width: min(1050px, calc(100% - 36px)); margin: 0 auto; padding: 24px 0 56px; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:0 0 20px; border-bottom:1px solid #dce7f0; }
+    .brand { color:#176fb9; font-weight:850; letter-spacing:.11em; font-size:13px; }
+    nav { display:flex; gap:18px; flex-wrap:wrap; font-size:13px; font-weight:650; }
+    .hero { padding:42px 0 26px; }
+    .eyebrow { color:var(--blue); font-size:11px; font-weight:800; letter-spacing:.16em; }
+    h1 { margin:8px 0 9px; font-size:clamp(30px,5vw,43px); line-height:1.12; letter-spacing:-.04em; }
+    .lead { max-width:720px; color:var(--muted); margin:0; }
+    .notice { margin-top:22px; padding:14px 17px; border:1px solid #dcebf8; border-radius:12px; background:#f7fbff; color:#496a85; font-size:13px; }
+    section { margin-top:26px; padding:25px 27px; background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:0 8px 26px rgba(31,76,112,.035); }
+    h2 { margin:0 0 13px; font-size:21px; letter-spacing:-.025em; }
+    h3 { margin:24px 0 8px; font-size:15px; }
+    p, li { color:#61788d; font-size:14px; }
+    p { margin:8px 0; }
+    .endpoint { display:grid; grid-template-columns:78px minmax(0,1fr); gap:13px; padding:15px 0; border-top:1px solid #edf2f6; }
+    .method { align-self:start; text-align:center; padding:4px 7px; border-radius:6px; background:#eaf7f0; color:#208150; font-size:11px; font-weight:850; letter-spacing:.04em; }
+    .method.post { background:#fff3e5; color:#a96316; }
+    .path { font:700 14px ui-monospace,SFMono-Regular,Consolas,monospace; color:#254b69; overflow-wrap:anywhere; }
+    .desc { margin-top:4px; color:var(--muted); font-size:13px; }
+    code { padding:2px 5px; border-radius:5px; background:#eef4f8; color:#245d88; font:12px ui-monospace,SFMono-Regular,Consolas,monospace; }
+    pre { overflow-x:auto; margin:12px 0; padding:17px 18px; border-radius:11px; background:var(--code); color:#e0edf7; font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace; }
+    table { width:100%; border-collapse:collapse; margin:12px 0; font-size:13px; }
+    th,td { padding:10px 11px; text-align:left; vertical-align:top; border-bottom:1px solid #edf2f6; }
+    th { color:#58748a; font-size:11px; letter-spacing:.06em; text-transform:uppercase; }
+    td { color:#61788d; }
+    .status { display:inline-block; min-width:43px; margin-right:7px; font:750 11px ui-monospace,monospace; color:#365d7a; }
+    .cta { display:inline-flex; align-items:center; margin-top:10px; padding:10px 14px; border-radius:9px; color:#fff; background:linear-gradient(110deg,#1685d3,#1769b5); font-size:13px; font-weight:750; }
+    .cta:hover { text-decoration:none; filter:brightness(1.04); }
+    footer { display:flex; justify-content:space-between; gap:12px; padding:20px 2px 0; color:#8ca0b1; font-size:11px; flex-wrap:wrap; }
+    @media(max-width:620px) {
+      .shell { width:calc(100% - 24px); padding-top:13px; }
+      header { align-items:flex-start; flex-direction:column; }
+      .hero { padding:30px 0 12px; }
+      section { padding:20px 16px; }
+      .endpoint { grid-template-columns:65px minmax(0,1fr); gap:9px; }
+      table { display:block; overflow-x:auto; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <a class="brand" href="/">ПОГОДА · ГОРОДЕЦ</a>
+      <nav aria-label="Навигация">
+        <a href="/">Погодный интерфейс</a>
+        <a href="/api/swagger">Интерактивная схема API</a>
+        <a href="/api/openapi.json">OpenAPI JSON</a>
+      </nav>
+    </header>
+
+    <div class="hero">
+      <div class="eyebrow">API · VERSION 1.0.0</div>
+      <h1>Документация API погоды</h1>
+      <p class="lead">HTTP API для доступа к почасовому прогнозу на сегодня и завтра, а также к дневному прогнозу на 10 и 14 дней для Городца. Ответы возвращаются в формате JSON.</p>
+      <div class="notice">Базовый адрес API: <code>/api/v1</code>. Данные формируются парсером Gismeteo и читаются из последнего сохранённого снимка. Все даты и часы прогноза относятся к часовому поясу Europe/Moscow.</div>
+      <a class="cta" href="/api/swagger">Открыть интерактивную документацию →</a>
+    </div>
+
+    <section>
+      <h2>Доступные методы</h2>
+      <div class="endpoint">
+        <span class="method">GET</span>
+        <div><div class="path">/api/v1/health</div><div class="desc">Проверка состояния сервиса, доступности прогноза и наличия HTML-копий.</div></div>
+      </div>
+      <div class="endpoint">
+        <span class="method">GET</span>
+        <div><div class="path">/api/v1/forecast</div><div class="desc">Полный JSON со всеми четырьмя периодами прогноза и временем последнего обновления.</div></div>
+      </div>
+      <div class="endpoint">
+        <span class="method">GET</span>
+        <div><div class="path">/api/v1/forecast/{period}</div><div class="desc">Прогноз для одного периода. Допустимые значения: <code>today</code>, <code>tomorrow</code>, <code>10_days</code>, <code>2_weeks</code>.</div></div>
+      </div>
+      <div class="endpoint">
+        <span class="method post">POST</span>
+        <div><div class="path">/api/v1/refresh</div><div class="desc">Повторно загрузить страницы Gismeteo, выполнить разбор и сохранить новый JSON. Требует заголовок <code>X-Refresh-Token</code>; токен задаётся переменной окружения <code>WEATHER_API_REFRESH_TOKEN</code>.</div></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Примеры запросов</h2>
+      <h3>Получить все прогнозы</h3>
+      <pre>curl http://localhost:8000/api/v1/forecast</pre>
+      <h3>Получить прогноз на 10 дней</h3>
+      <pre>curl http://localhost:8000/api/v1/forecast/10_days</pre>
+      <h3>Проверить состояние сервиса</h3>
+      <pre>curl http://localhost:8000/api/v1/health</pre>
+      <h3>Обновить данные (защищённый запрос)</h3>
+      <pre>curl -X POST http://localhost:8000/api/v1/refresh \
+  -H "X-Refresh-Token: YOUR_REFRESH_TOKEN"</pre>
+    </section>
+
+    <section>
+      <h2>Структура ответа</h2>
+      <p>Полный ответ <code>GET /api/v1/forecast</code> содержит время получения данных и объект <code>forecasts</code>, где ключи соответствуют периодам.</p>
+      <pre>{
+  "fetched_at_utc": "2026-11-08T06:00:00+00:00",
+  "forecasts": {
+    "today": {
+      "label": "Погода сегодня",
+      "source_url": "https://www.gismeteo.ru/weather-gorodets-4334/",
+      "resolution": "hourly",
+      "hours": {
+        "1794124800": {
+          "timestamp": 1794124800,
+          "time": "12:00",
+          "sky": "Облачно",
+          "temperature_c": 4.0,
+          "wind_speed_ms": 3.0,
+          "wind_gust_ms": 6.0,
+          "wind_direction": "СЗ"
+        }
+      }
+    }
+  }
+}</pre>
+      <p>Пример иллюстрирует структуру и содержит условные значения. Фактический ответ может содержать больше временных точек и дней.</p>
+      <table>
+        <thead><tr><th>Поле</th><th>Тип</th><th>Описание</th></tr></thead>
+        <tbody>
+          <tr><td><code>fetched_at_utc</code></td><td>string</td><td>Время формирования сохранённого набора, ISO 8601, UTC.</td></tr>
+          <tr><td><code>resolution</code></td><td>string</td><td><code>hourly</code> для почасового прогноза или <code>daily</code> для дневного.</td></tr>
+          <tr><td><code>timestamp</code></td><td>integer</td><td>Unix timestamp в секундах.</td></tr>
+          <tr><td><code>temperature_c</code></td><td>number или null</td><td>Температура в °C. В дневном прогнозе может быть null, если отдельно указаны минимум и максимум.</td></tr>
+          <tr><td><code>temperature_min_c</code>, <code>temperature_max_c</code></td><td>number или null</td><td>Минимальная и максимальная температура дневного прогноза.</td></tr>
+          <tr><td><code>wind_speed_ms</code>, <code>wind_gust_ms</code></td><td>number</td><td>Скорость ветра и порывы в м/с.</td></tr>
+          <tr><td><code>wind_direction</code></td><td>string или null</td><td>Текстовое обозначение направления ветра.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Коды состояния HTTP</h2>
+      <p><span class="status">200</span>Запрос успешно выполнен.</p>
+      <p><span class="status">401</span>Для обновления отсутствует или неверен токен.</p>
+      <p><span class="status">404</span>Указан неизвестный период или данные периода отсутствуют.</p>
+      <p><span class="status">409</span>Обновление уже выполняется.</p>
+      <p><span class="status">502</span>Не удалось загрузить или разобрать страницу источника при обновлении.</p>
+      <p><span class="status">503</span>Прогноз ещё не создан, файл данных недоступен или обновление через API отключено.</p>
+      <p>Ошибки возвращаются в формате JSON с полем <code>detail</code>.</p>
+    </section>
+
+    <section>
+      <h2>Запуск сервиса</h2>
+      <p>Установите зависимости, запустите первичную загрузку прогноза и поднимите ASGI-сервер:</p>
+      <pre>python -m pip install -r requirements.txt
+python main.py
+python -m uvicorn api:app --host 127.0.0.1 --port 8000</pre>
+      <p>Для включения API-обновления задайте секретный токен до запуска сервера.</p>
+      <pre># Windows PowerShell
+$env:WEATHER_API_REFRESH_TOKEN = "replace-with-a-long-random-secret"
+
+# Linux / macOS
+export WEATHER_API_REFRESH_TOKEN="replace-with-a-long-random-secret"</pre>
+      <p>Интерактивная схема доступна по адресу <a href="/api/swagger">/api/swagger</a>, машинно-читаемая спецификация OpenAPI — <a href="/api/openapi.json">/api/openapi.json</a>.</p>
+    </section>
+
+    <footer>
+      <span>Погода в Городце · Данные источника Gismeteo</span>
+      <a href="/">Вернуться к прогнозу ↑</a>
+    </footer>
+  </main>
+</body>
+</html>
