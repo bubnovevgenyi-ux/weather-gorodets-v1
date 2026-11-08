@@ -146,7 +146,7 @@ class WeatherApiTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             env_file = Path(temp_dir) / ".env"
             env_file.write_text(
-                "WEATHER_API_REFRESH_TOKEN=dotenv-test-token\\n",
+                "WEATHER_API_REFRESH_TOKEN=dotenv-test-token\n",
                 encoding="utf-8",
             )
             with patch.object(api, "ENV_FILE", env_file):
@@ -158,7 +158,7 @@ class WeatherApiTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             env_file = Path(temp_dir) / ".env"
             env_file.write_text(
-                "WEATHER_API_REFRESH_TOKEN=dotenv-test-token\\n",
+                "WEATHER_API_REFRESH_TOKEN=dotenv-test-token\n",
                 encoding="utf-8",
             )
             with patch.object(api, "ENV_FILE", env_file):
