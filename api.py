@@ -7,24 +7,25 @@ import threading
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from dotenv import load_dotenv
 
 from src.collector import HTML_BACKUP_DIR, WEATHER_JSON_PATH, collect_forecasts
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 WEB_DIR = PROJECT_ROOT / "web"
 ENV_FILE = PROJECT_ROOT / ".env"
+REFRESH_LOCK = threading.Lock()
+PERIODS = ("today", "tomorrow", "10_days", "2_weeks")
 
 
 def _get_refresh_token() -> str | None:
     """Прочитать токен из окружения или локального .env; окружение имеет приоритет."""
     load_dotenv(dotenv_path=ENV_FILE, override=False)
     return os.getenv("WEATHER_API_REFRESH_TOKEN") or None
-REFRESH_LOCK = threading.Lock()
-PERIODS = ("today", "tomorrow", "10_days", "2_weeks")
+
 
 app = FastAPI(
     title="Weather Gorodets API",
@@ -82,7 +83,6 @@ def health() -> dict[str, Any]:
             "status": "not_initialized",
             "forecast_available": False,
             "cached_html_pages": cached_pages,
-        "refresh_enabled": bool(_get_refresh_token()),
             "refresh_enabled": bool(_get_refresh_token()),
         }
 
@@ -92,6 +92,7 @@ def health() -> dict[str, Any]:
         "fetched_at_utc": payload.get("fetched_at_utc"),
         "available_periods": list(payload["forecasts"].keys()),
         "cached_html_pages": cached_pages,
+        "refresh_enabled": bool(_get_refresh_token()),
     }
 
 
