@@ -223,7 +223,7 @@ function renderPeriod(period) {
 
 async function init() {
   const isDemo = new URLSearchParams(location.search).get('demo') === '1';
-  const dataUrl = isDemo ? 'demo_weather.json' : '../data/weather.json';
+  const dataUrl = isDemo ? 'demo_weather.json' : '/api/v1/forecast';
   try {
     const response = await fetch(dataUrl, { cache: 'no-store' });
     if (!response.ok) throw new Error('HTTP ' + response.status);
@@ -239,7 +239,7 @@ async function init() {
     }
   } catch (error) {
     console.warn('Weather JSON is not available:', error);
-    el.updatedAt.textContent = 'Ожидает data/weather.json';
+    el.updatedAt.textContent = 'API пока не отдаёт прогноз';
     forecastData = { forecasts: {} };
   }
   el.tabs.forEach(function (tab) {
