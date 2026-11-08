@@ -28,6 +28,13 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, _format: str, *_args: object) -> None:
         pass
 
+    def translate_path(self, path: str) -> str:
+        # Веб-интерфейс обращается к API; для локального PNG-рендера
+        # подменяем этот маршрут чтением уже сохранённого JSON-файла.
+        if path.split("?", 1)[0] == "/api/v1/forecast":
+            path = "/data/weather.json"
+        return super().translate_path(path)
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Сохранить HTML-прогнозы в PNG.")
