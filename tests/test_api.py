@@ -137,8 +137,10 @@ class WeatherApiTests(unittest.TestCase):
 
 
     def test_health_exposes_refresh_configuration_without_secret(self) -> None:
-        with patch.dict(os.environ, {}, clear=True):
-            response = self.client.get("/api/v1/health")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch.object(api, "ENV_FILE", Path(temp_dir) / ".env"):
+                with patch.dict(os.environ, {}, clear=True):
+                    response = self.client.get("/api/v1/health")
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.json()["refresh_enabled"])
 
