@@ -173,12 +173,16 @@
       <pre>python -m pip install -r requirements.txt
 python main.py
 python -m uvicorn api:app --host 127.0.0.1 --port 8000</pre>
-      <p>Для включения API-обновления задайте секретный токен до запуска сервера.</p>
+      <p>Токен можно хранить в локальном файле <code>.env</code> в корне проекта. Сервис автоматически загружает его при обращении к API. Сгенерируйте собственное значение и сохраните его в файл:</p>
       <pre># Windows PowerShell
-$env:WEATHER_API_REFRESH_TOKEN = "replace-with-a-long-random-secret"
+Copy-Item .env.example .env
+$token = python -c "import secrets; print(secrets.token_urlsafe(32))"
+"WEATHER_API_REFRESH_TOKEN=$token" | Set-Content -Encoding ascii .env
 
 # Linux / macOS
-export WEATHER_API_REFRESH_TOKEN="replace-with-a-long-random-secret"</pre>
+cp .env.example .env
+python -c "import secrets; print('WEATHER_API_REFRESH_TOKEN=' + secrets.token_urlsafe(32))" >> .env</pre>
+      <p>После изменения конфигурации перезапустите Uvicorn. Файл <code>.env</code> исключён из Git. Проверить настройку можно через <code>GET /api/v1/health</code>: поле <code>refresh_enabled</code> должно быть <code>true</code>.</p>
       <p>Интерактивная схема доступна по адресу <a href="/api/swagger">/api/swagger</a>, машинно-читаемая спецификация OpenAPI — <a href="/api/openapi.json">/api/openapi.json</a>.</p>
     </section>
 
