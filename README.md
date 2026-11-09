@@ -9,7 +9,7 @@
 - Серверный HTML-рендеринг карточек, сводных показателей и SVG-графика температуры.
 - Переключение периодов обычными GET-запросами — JavaScript для формирования прогноза не используется.
 - HTTP API с JSON-ответами и проверкой состояния сервиса.
-- Отдельная русскоязычная страница документации API, Swagger UI и схема OpenAPI.
+- Стандартная документация FastAPI: Swagger UI, ReDoc и схема OpenAPI.
 - Сохранение HTML-страниц Gismeteo в `data/html_backup/` и использование последней копии при сетевой ошибке.
 
 ## Источники данных
@@ -42,9 +42,9 @@ python -m uvicorn api:app --host 127.0.0.1 --port 8000
 После запуска откройте:
 
 - Веб-интерфейс: http://127.0.0.1:8000/
-- Документация API: http://127.0.0.1:8000/api-docs
-- Swagger UI: http://127.0.0.1:8000/api/swagger
-- OpenAPI JSON: http://127.0.0.1:8000/api/openapi.json
+- Swagger UI (FastAPI): http://127.0.0.1:8000/docs
+- ReDoc (FastAPI): http://127.0.0.1:8000/redoc
+- OpenAPI JSON: http://127.0.0.1:8000/openapi.json
 
 Для уже склонированного проекта получите изменения командой `git pull origin main` после слияния обновлений в основную ветку.
 
@@ -101,7 +101,7 @@ curl.exe -X POST http://127.0.0.1:8000/api/v1/refresh -H "X-Refresh-Token: $toke
 
 ## Серверный рендеринг
 
-Маршрут `GET /` читает сохранённый JSON, передаёт выбранный период в `src/presentation.py` и отображает `templates/index.html` через Jinja2. Подготовка подписей, температурных диапазонов, статистики ветра и SVG-графика выполняется на сервере. CSS и страница документации раздаются из `web/` по префиксу `/static`.
+Маршрут `GET /` читает сохранённый JSON, передаёт выбранный период в `src/presentation.py` и отображает `templates/index.html` через Jinja2. Подготовка подписей, температурных диапазонов, статистики ветра и SVG-графика выполняется на сервере. CSS раздаётся из `web/` по префиксу `/static`. Документация API предоставляется FastAPI по стандартным адресам `/docs`, `/redoc` и `/openapi.json`.
 
 Переключатели периодов — обычные ссылки вида `/?period=10_days`. Браузер получает полностью сформированную HTML-страницу; клиентский JavaScript больше не дублирует логику визуализации.
 
@@ -125,25 +125,32 @@ data/html_backup/
 python -m unittest discover -s tests -v
 ```
 
-Тесты покрывают парсер, HTML-кэш, HTTP-заголовки, JSON API, серверный HTML-рендеринг, статические ресурсы и страницу документации.
+Тесты покрывают парсер, HTML-кэш, HTTP-заголовки, JSON API, серверный HTML-рендеринг, стандартную документацию FastAPI и генерацию JPEG-карточек.
 
-## Экспорт интерфейса в PNG
+## Изображения для Telegram
 
-Для экспорта установите Playwright и Chromium:
+Генератор создаёт компактные JPEG-карточки шириной 1080 px. Высота подстраивается под количество прогнозных записей: почасовые карточки на сегодня/завтра и списки на 10/14 дней. Изображение формируется напрямую из `data/weather.json`, без Playwright, Chromium и снимка длинной HTML-страницы.
+
+Установите Pillow:
 
 ```powershell
 python -m pip install -r requirements-render.txt
-python -m playwright install chromium
 ```
 
-Сначала запустите FastAPI, затем экспортируйте страницы:
+После первого запуска FastAPI создаст `data/weather.json`. Затем:
 
 ```powershell
+# Создать картинки для всех периодов
 python scripts/render_weather.py
+
+# Только прогноз на 10 дней — удобно отправить в Telegram
 python scripts/render_weather.py --period 10_days
+
+# Сохранить картинку в выбранный каталог
+python scripts/render_weather.py --period today --output output/telegram
 ```
 
-Скрипт использует работающий FastAPI-сервер и сохраняет результат в `output/`.
+Результаты сохраняются в `output/telegram/` в формате JPEG. Для нестандартной системы можно указать TTF-шрифт с кириллицей через `--font path/to/font.ttf` или переменную окружения `WEATHER_FONT`.
 
 ## Структура проекта
 
@@ -167,7 +174,6 @@ weather-gorodets-v1/
 ├── scripts/
 │   └── render_weather.py
 ├── web/
-│   ├── api-docs.html           # страница документации API
 │   └── styles.css
 └── data/
     ├── html_backup/           # локальные HTML-копии страниц Gismeteo
