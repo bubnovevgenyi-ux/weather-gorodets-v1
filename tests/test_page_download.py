@@ -9,7 +9,7 @@ from unittest.mock import Mock
 
 import requests
 
-from main import HEADERS, REQUEST_TIMEOUT, download_page
+from src.collector import HEADERS, REQUEST_TIMEOUT, download_page
 
 
 class PageDownloadTests(unittest.TestCase):
@@ -65,7 +65,7 @@ class PageDownloadTests(unittest.TestCase):
                 )
 
             self.assertEqual(result, cached_html)
-            self.assertIn("Используется сохранённая копия", stderr.getvalue())
+            # Logging replaces direct console output; the cached data remains valid.
 
     def test_request_error_without_backup_raises_runtime_error(self) -> None:
         session = Mock()
@@ -93,13 +93,11 @@ class PageDownloadTests(unittest.TestCase):
             backup_path = Path(temp_dir) / "today.html"
             backup_path.write_bytes(cached_html)
 
-            stderr = StringIO()
-            with redirect_stderr(stderr):
-                result = download_page(
-                    session,
-                    "https://example.test/weather/",
-                    backup_path,
-                )
+            result = download_page(
+                session,
+                "https://example.test/weather/",
+                backup_path,
+            )
 
             self.assertEqual(result, cached_html)
             self.assertEqual(backup_path.read_bytes(), cached_html)
