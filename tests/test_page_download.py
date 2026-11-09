@@ -2,8 +2,6 @@
 
 import tempfile
 import unittest
-from contextlib import redirect_stderr
-from io import StringIO
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -56,16 +54,13 @@ class PageDownloadTests(unittest.TestCase):
             backup_path.parent.mkdir(parents=True)
             backup_path.write_bytes(cached_html)
 
-            stderr = StringIO()
-            with redirect_stderr(stderr):
-                result = download_page(
-                    session,
-                    "https://example.test/weather/",
-                    backup_path,
-                )
+            result = download_page(
+                session,
+                "https://example.test/weather/",
+                backup_path,
+            )
 
             self.assertEqual(result, cached_html)
-            # Logging replaces direct console output; the cached data remains valid.
 
     def test_request_error_without_backup_raises_runtime_error(self) -> None:
         session = Mock()
