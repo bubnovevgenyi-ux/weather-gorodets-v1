@@ -26,7 +26,7 @@ from src.collector import HTML_BACKUP_DIR, WEATHER_JSON_PATH, collect_forecasts
 from src.presentation import build_forecast_view
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-WEB_DIR = PROJECT_ROOT / "web"
+STATIC_DIR = PROJECT_ROOT / "static"
 TEMPLATES_DIR = PROJECT_ROOT / "templates"
 ENV_FILE = PROJECT_ROOT / ".env"
 REFRESH_LOCK = threading.Lock()
@@ -642,4 +642,4 @@ def refresh_forecast(
 
 
 # Статические ресурсы интерфейса. Документация предоставляется FastAPI по умолчанию.
-app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

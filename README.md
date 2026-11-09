@@ -105,7 +105,7 @@ curl.exe -X POST http://127.0.0.1:8000/api/v1/refresh -H "X-Refresh-Token: $toke
 
 ## Серверный рендеринг
 
-Маршрут `GET /` читает сохранённый JSON, передаёт выбранный период в `src/presentation.py` и отображает `templates/index.html` через Jinja2. Подготовка подписей, температурных диапазонов, статистики ветра и SVG-графика выполняется на сервере. CSS раздаётся из `web/` по префиксу `/static`. Документация API предоставляется FastAPI по стандартным адресам `/docs`, `/redoc` и `/openapi.json`.
+Маршрут `GET /` читает сохранённый JSON, передаёт выбранный период в `src/presentation.py` и отображает `templates/index.html` через Jinja2. Подготовка подписей, температурных диапазонов, статистики ветра и SVG-графика выполняется на сервере. CSS хранится отдельно от Jinja2-шаблонов в `static/css/` и раздаётся FastAPI по префиксу `/static`. Документация API предоставляется FastAPI по стандартным адресам `/docs`, `/redoc` и `/openapi.json`.
 
 Переключатели периодов — обычные ссылки вида `/?period=10_days`. Браузер получает полностью сформированную HTML-страницу; клиентский JavaScript больше не дублирует логику визуализации.
 
@@ -169,8 +169,9 @@ weather-gorodets-v1/
 │   ├── test_page_download.py
 │   ├── test_weather_parser.py
 │   └── test_api_image.py
-├── web/
-│   └── styles.css
+├── static/
+│   └── css/
+│       └── styles.css
 └── data/
     ├── html_backup/           # локальные HTML-копии страниц Gismeteo
     └── weather.json           # сохранённые прогнозы
