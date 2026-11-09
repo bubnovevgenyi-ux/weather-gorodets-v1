@@ -62,6 +62,7 @@ python -m uvicorn api:app --host 127.0.0.1 --port 8000
 | `GET` | `/api/v1/health` | Статус сервиса, наличие данных и HTML-копий |
 | `GET` | `/api/v1/forecast` | Все четыре периода прогноза в JSON |
 | `GET` | `/api/v1/forecast/{period}` | Один период в JSON |
+| `GET` | `/api/v1/forecast/{period}/image` | Изображение прогноза JPEG (для Telegram и мобильных устройств) |
 | `POST` | `/api/v1/refresh` | Повторная загрузка и разбор страниц Gismeteo |
 
 Примеры:
@@ -72,6 +73,9 @@ curl.exe http://127.0.0.1:8000/api/v1/forecast
 
 # Прогноз на 10 дней в JSON
 curl.exe http://127.0.0.1:8000/api/v1/forecast/10_days
+
+# Изображение прогноза на 10 дней (JPEG)
+curl.exe http://127.0.0.1:8000/api/v1/forecast/10_days/image --output weather_10_days.jpg
 
 # Состояние сервиса
 curl.exe http://127.0.0.1:8000/api/v1/health
@@ -125,28 +129,26 @@ data/html_backup/
 python -m unittest discover -s tests -v
 ```
 
-Тесты покрывают парсер, HTML-кэш, HTTP-заголовки, JSON API, серверный HTML-рендеринг, стандартную документацию FastAPI и генерацию JPEG-карточек.
+Тесты покрывают парсер, HTML-кэш, HTTP-заголовки, JSON API, серверный HTML-рендеринг, стандартную документацию FastAPI и HTTP-эндпоинт генерации JPEG.
 
-## Изображения для Telegram
+## Изображения прогноза
 
-Генератор создаёт компактные JPEG-карточки шириной 1080 px. Высота подстраивается под количество прогнозных записей: почасовые карточки на сегодня/завтра и списки на 10/14 дней. Изображение формируется напрямую из `data/weather.json`, без Playwright, Chromium и снимка длинной HTML-страницы.
+FastAPI генерирует JPEG-карточку непосредственно в HTTP-ответе. Изображение создаётся в памяти с помощью Pillow: временные файлы и отдельный CLI-скрипт не требуются. Ширина карточки — 1080 px, высота зависит от количества записей прогноза.
 
-Pillow устанавливается вместе с остальными зависимостями проекта из `requirements.txt`.
+Доступны адреса:
 
-После первого запуска FastAPI создаст `data/weather.json`. Затем:
+- `GET /api/v1/forecast/today/image`
+- `GET /api/v1/forecast/tomorrow/image`
+- `GET /api/v1/forecast/10_days/image`
+- `GET /api/v1/forecast/2_weeks/image`
+
+Пример загрузки изображения на диск:
 
 ```powershell
-# Создать картинки для всех периодов
-python scripts/render_weather.py
-
-# Только прогноз на 10 дней — удобно отправить в Telegram
-python scripts/render_weather.py --period 10_days
-
-# Сохранить картинку в выбранный каталог
-python scripts/render_weather.py --period today --output output/telegram
+curl.exe http://127.0.0.1:8000/api/v1/forecast/10_days/image --output weather_10_days.jpg
 ```
 
-Результаты сохраняются в `output/telegram/` в формате JPEG. Для нестандартной системы можно указать TTF-шрифт с кириллицей через `--font path/to/font.ttf` или переменную окружения `WEATHER_FONT`.
+URL можно открыть в браузере телефона или передать Telegram Bot API как фотографию. Ответ имеет MIME-тип `image/jpeg` и заголовок `Content-Disposition: inline`.
 
 ## Структура проекта
 
@@ -166,9 +168,7 @@ weather-gorodets-v1/
 │   ├── test_api.py
 │   ├── test_page_download.py
 │   ├── test_weather_parser.py
-│   └── test_render_weather.py
-├── scripts/
-│   └── render_weather.py
+│   └── test_api_image.py
 ├── web/
 │   └── styles.css
 └── data/
