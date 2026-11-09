@@ -87,6 +87,17 @@ class WeatherApiTests(unittest.TestCase):
         )
         return payload
 
+    def test_startup_collects_forecast_when_cache_is_missing(self) -> None:
+        with patch.object(api, "collect_forecasts") as collect:
+            with TestClient(api.app):
+                collect.assert_called_once_with(self.data_file)
+
+    def test_startup_does_not_collect_when_cache_exists(self) -> None:
+        self.write_payload()
+        with patch.object(api, "collect_forecasts") as collect:
+            with TestClient(api.app):
+                collect.assert_not_called()
+
     def test_health_without_forecast_reports_not_initialized(self) -> None:
         response = self.client.get("/api/v1/health")
         self.assertEqual(response.status_code, 200)
