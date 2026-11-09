@@ -1,0 +1,4 @@
+-r requirements.txt
+
+# Use the pydevd-pycharm build recommended by your PyCharm Python Debug Server dialog.
+pydevd-pycharm
