@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1477c9">
+  <meta name="description" content="Почасовой и дневной прогноз погоды в Городце Нижегородской области.">
+  <title>Погода в Городце — {{ forecast.label if forecast else "прогноз" }}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Погода в Городце">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 52"><path d="M15 42h35a11 11 0 0 0 1-22 17 17 0 0 0-32-3 13 13 0 0 0-4 25Z" fill="#fff"/></svg></span>
+        <span class="brand-copy"><strong>ПОГОДА</strong><small>ГОРОДЕЦ</small></span>
+      </a>
+      <div class="topbar-meta"><span class="live-dot"></span><span>Прогноз по данным Gismeteo</span><a class="api-link" href="/api-docs">Документация API ↗</a></div>
+    </header>
+
+    <section class="intro" id="top">
+      <div>
+        <div class="eyebrow">НИЖЕГОРОДСКАЯ ОБЛАСТЬ</div>
+        <h1>Погода в Городце</h1>
+        <p class="intro-note">Почасовой и дневной прогноз: небо, температура и ветер</p>
+      </div>
+      <div class="updated">{{ updated_label }}</div>
+    </section>
+
+    <section class="forecast-card" aria-label="Погодный прогноз">
+      <div class="card-head">
+        <nav class="period-tabs" aria-label="Период прогноза">
+          {% for item in periods %}
+          <a class="period-tab{% if item.key == selected_period %} active{% endif %}"
+             href="/?period={{ item.key }}"
+             {% if item.key == selected_period %}aria-current="page"{% endif %}>{{ item.label }}</a>
+          {% endfor %}
+        </nav>
+        {% if forecast %}
+        <div class="card-source"><span class="source-dot"></span><span>{{ forecast.source_label }}</span></div>
+        {% endif %}
+      </div>
+
+      {% if forecast %}
+      <div id="forecastPanel">
+        <div class="summary-row">
+          <div class="summary-weather">
+            <div class="summary-icon" aria-hidden="true">{{ forecast.records[0].icon | safe }}</div>
+            <div>
+              <div class="summary-condition">{{ forecast.condition }}</div>
+              <div class="summary-period">{{ forecast.label }} · {{ forecast.date_label }}</div>
+            </div>
+          </div>
+          <div class="summary-temperature">
+            <span class="summary-temp {{ forecast.temperature_css_class }}">{{ forecast.first_temperature }}</span>
+            <div class="summary-range">Мин. {{ forecast.minimum_temperature }} <i></i> Макс. {{ forecast.maximum_temperature }}</div>
+          </div>
+          <div class="summary-wind">
+            <span class="wind-glyph" aria-hidden="true">↗</span>
+            <div><small>ВЕТЕР</small><strong>{{ forecast.average_wind }}</strong><span>{{ forecast.wind_summary }}</span></div>
+          </div>
+        </div>
+
+        <div class="section-heading">
+          <div><span class="section-kicker">{{ forecast.section_kicker }}</span><h2>{{ forecast.section_title }}</h2></div>
+          <span class="point-count">{{ forecast.count_label }}</span>
+        </div>
+
+        <div class="hourly-wrap">
+          <div class="hourly-grid{% if forecast.daily %} daily-grid{% endif %}">
+            {% for row in forecast.records %}
+            <article class="hour-cell{% if forecast.daily %} day-cell{% endif %}">
+              <div class="hour-time">{{ row.date_or_time }}</div>
+              <div class="hour-icon" aria-hidden="true">{{ row.icon | safe }}</div>
+              <div class="hour-temp">{{ row.temperature }}</div>
+              <div class="hour-sky">{{ row.sky }}</div>
+              <div class="hour-divider"></div>
+              <div class="hour-wind">Ветер {{ row.wind_speed }} м/с{% if row.wind_direction %} · {{ row.wind_direction }}{% endif %}</div>
+              <div class="hour-gust">Порывы {{ row.wind_gust }} м/с</div>
+            </article>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="chart-block">
+          <div class="chart-title"><span>{{ forecast.chart_title }}</span><strong>°C</strong></div>
+          <div class="chart-area" aria-label="График температуры">{{ forecast.chart_svg | safe }}</div>
+        </div>
+
+        <div class="details-grid">
+          <article class="detail-card">
+            <span class="detail-icon"><svg viewBox="0 0 24 24"><path d="M3 8h12a3 3 0 1 0-3-3M3 12h17a2 2 0 1 1-2 2M3 16h10" fill="none" stroke="#2588c6" stroke-width="2" stroke-linecap="round"/></svg></span>
+            <div><small>СРЕДНИЙ ВЕТЕР</small><strong>{{ forecast.average_wind }}</strong><span>по точкам прогноза</span></div>
+          </article>
+          <article class="detail-card">
+            <span class="detail-icon gust-icon"><svg viewBox="0 0 24 24"><path d="M5 18 18 5M9 5h9v9" fill="none" stroke="#2588c6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 11h6" fill="none" stroke="#2588c6" stroke-width="2" stroke-linecap="round"/></svg></span>
+            <div><small>МАКСИМАЛЬНЫЙ ПОРЫВ</small><strong>{{ forecast.maximum_gust }}</strong><span>за период прогноза</span></div>
+          </article>
+          <article class="detail-card">
+            <span class="detail-icon"><svg viewBox="0 0 24 24"><path d="M10 14.5V5a3 3 0 0 1 6 0v9.5a5 5 0 1 1-6 0Z" fill="none" stroke="#2588c6" stroke-width="2"/><path d="M13 8v9" stroke="#ef9e48" stroke-width="2.5" stroke-linecap="round"/></svg></span>
+            <div><small>ДИАПАЗОН ТЕМПЕРАТУРЫ</small><strong>{{ forecast.temperature_range }}</strong><span>минимум и максимум</span></div>
+          </article>
+        </div>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-icon">☁</div>
+        <h2>Пока нет данных прогноза</h2>
+        <p>Сервис автоматически загружает прогноз Gismeteo при первом запуске. Проверьте состояние API или запустите обновление через защищённый <code>POST /api/v1/refresh</code>.</p>
+      </div>
+      {% endif %}
+    </section>
+
+    <footer class="footer">
+      <span>Время и даты указаны по Городцу · Europe/Moscow</span>
+      <a href="https://www.gismeteo.ru/weather-gorodets-4334/" target="_blank" rel="noopener">Источник: Gismeteo ↗</a>
+    </footer>
+  </main>
+</body>
+</html>
