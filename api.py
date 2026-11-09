@@ -91,7 +91,7 @@ async def lifespan(_app: FastAPI):
         logger.info("Сохранённый прогноз не найден; выполняется первичная загрузка Gismeteo.")
         try:
             await run_in_threadpool(collect_forecasts, WEATHER_JSON_PATH)
-        except (RuntimeError, ValueError, OSError):
+        except Exception:
             # Ошибка источника не должна блокировать запуск веб-интерфейса и API.
             logger.exception("Не удалось выполнить первичную загрузку прогноза.")
     yield
