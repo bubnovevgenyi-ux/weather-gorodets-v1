@@ -1,24 +1,41 @@
-"""FastAPI-сервис погоды в Городце и API для веб-интерфейса."""
+"""FastAPI-сервис погоды в Городце, JSON API и серверный HTML-интерфейс."""
 
 import json
+import logging
 import os
 import secrets
 import threading
+from contextlib import asynccontextmanager
+from datetime import datetime
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Header, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from starlette.concurrency import run_in_threadpool
 
 from src.collector import HTML_BACKUP_DIR, WEATHER_JSON_PATH, collect_forecasts
+from src.presentation import build_forecast_view
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 WEB_DIR = PROJECT_ROOT / "web"
+TEMPLATES_DIR = PROJECT_ROOT / "templates"
 ENV_FILE = PROJECT_ROOT / ".env"
 REFRESH_LOCK = threading.Lock()
+MOSCOW = ZoneInfo("Europe/Moscow")
 PERIODS = ("today", "tomorrow", "10_days", "2_weeks")
+PERIOD_LABELS = (
+    {"key": "today", "label": "Сегодня"},
+    {"key": "tomorrow", "label": "Завтра"},
+    {"key": "10_days", "label": "10 дней"},
+    {"key": "2_weeks", "label": "2 недели"},
+)
+logger = logging.getLogger(__name__)
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 
 def _get_refresh_token() -> str | None:
@@ -27,17 +44,17 @@ def _get_refresh_token() -> str | None:
     return os.getenv("WEATHER_API_REFRESH_TOKEN") or None
 
 
-app = FastAPI(
-    title="Weather Gorodets API",
-    version="1.0.0",
-    description=(
-        "API почасового и дневного прогноза погоды в Городце. "
-        "Данные собираются парсером Gismeteo и сохраняются локально."
-    ),
-    docs_url="/api/swagger",
-    openapi_url="/api/openapi.json",
-    redoc_url=None,
-)
+def _format_updated_at(value: Any) -> str:
+    """Отобразить время получения данных в часовом поясе Городца."""
+    if not value:
+        return "Время обновления неизвестно"
+    try:
+        timestamp = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=ZoneInfo("UTC"))
+        return "Получено " + timestamp.astimezone(MOSCOW).strftime("%d.%m.%Y в %H:%M МСК")
+    except (TypeError, ValueError, OverflowError):
+        return "Данные прогноза"
 
 
 def _read_forecast() -> dict[str, Any]:
@@ -49,8 +66,8 @@ def _read_forecast() -> dict[str, Any]:
         raise HTTPException(
             status_code=503,
             detail=(
-                "Прогноз ещё не загружен. Выполните python main.py "
-                "или настройте защищённый POST /api/v1/refresh."
+                "Прогноз ещё не загружен. При запуске сервера выполняется "
+                "первичная загрузка; также доступно защищённое POST /api/v1/refresh."
             ),
         ) from exc
     except (OSError, json.JSONDecodeError) as exc:
@@ -65,6 +82,61 @@ def _read_forecast() -> dict[str, Any]:
             detail="Файл прогноза имеет неверную структуру.",
         )
     return payload
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """При первом старте автоматически получить прогноз, если локального кэша нет."""
+    if not WEATHER_JSON_PATH.is_file():
+        logger.info("Сохранённый прогноз не найден; выполняется первичная загрузка Gismeteo.")
+        try:
+            await run_in_threadpool(collect_forecasts, WEATHER_JSON_PATH)
+        except (RuntimeError, ValueError, OSError):
+            # Ошибка источника не должна блокировать запуск веб-интерфейса и API.
+            logger.exception("Не удалось выполнить первичную загрузку прогноза.")
+    yield
+
+
+app = FastAPI(
+    title="Weather Gorodets API",
+    version="2.0.0",
+    description=(
+        "Серверный HTML-интерфейс и JSON API почасового и дневного прогноза погоды "
+        "в Городце. Данные собираются парсером Gismeteo и сохраняются локально."
+    ),
+    docs_url="/api/swagger",
+    openapi_url="/api/openapi.json",
+    redoc_url=None,
+    lifespan=lifespan,
+)
+
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+def home(request: Request, period: str = "today") -> HTMLResponse:
+    """Отрендерить выбранный период прогноза на сервере через Jinja2."""
+    if period not in PERIODS:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Неизвестный период {period!r}. Допустимые значения: {', '.join(PERIODS)}.",
+        )
+
+    try:
+        payload = _read_forecast()
+    except HTTPException as exc:
+        if exc.status_code != 503:
+            raise
+        payload = {"forecasts": {}}
+
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={
+            "periods": PERIOD_LABELS,
+            "selected_period": period,
+            "forecast": build_forecast_view(payload, period),
+            "updated_label": _format_updated_at(payload.get("fetched_at_utc")),
+        },
+    )
 
 
 @app.get("/api/v1/health", tags=["Сервис"], summary="Состояние сервиса")
@@ -160,7 +232,7 @@ def refresh_forecast(
         raise HTTPException(status_code=409, detail="Обновление прогноза уже выполняется.")
 
     try:
-        collect_forecasts()
+        collect_forecasts(destination=WEATHER_JSON_PATH)
         return _read_forecast()
     except (RuntimeError, ValueError, OSError) as exc:
         raise HTTPException(
@@ -178,6 +250,5 @@ def api_documentation() -> FileResponse:
     return FileResponse(WEB_DIR / "api-docs.html")
 
 
-# Веб-интерфейс размещён на том же origin, что и API. Поэтому CORS не нужен.
-# Mount регистрируется после API-маршрутов, чтобы не перехватывать их.
-app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
+# Веб-ресурсы раздаются отдельно; корневой URL обслуживается шаблоном FastAPI/Jinja2.
+app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
