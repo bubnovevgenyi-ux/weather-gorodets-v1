@@ -1,17 +1,15 @@
 """FastAPI-сервис погоды в Городце, JSON API и серверный HTML-интерфейс."""
 
 import json
+import logging
 import math
 import os
-import sys
-from datetime import date
-from io import BytesIO
-import logging
-import os
 import secrets
+import sys
 import threading
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import date, datetime
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
