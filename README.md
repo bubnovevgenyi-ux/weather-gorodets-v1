@@ -207,24 +207,29 @@ URL можно открыть в браузере телефона или пер
 
 ```text
 weather-gorodets-v1/
-├── api.py                     # FastAPI, JSON API и серверные маршруты
+├── api.py                     # FastAPI, маршруты и HTTP-ответы
 ├── requirements.txt
-├── templates/
-│   └── index.html             # Jinja2-шаблон прогноза
+├── requirements-debug.txt     # дополнительные зависимости PyCharm Debug
 ├── src/
 │   ├── collector.py           # сборщик данных Gismeteo
+│   ├── debugger.py            # необязательное подключение PyCharm Debug
 │   ├── presentation.py        # модель представления и SVG-график
 │   ├── models.py
 │   ├── parser.py
 │   └── storage.py
-├── tests/
-│   ├── test_api.py
-│   ├── test_page_download.py
-│   ├── test_weather_parser.py
-│   └── test_api_image.py
+├── utils/
+│   └── weather_image.py       # генерация JPEG-карточек прогноза
+├── templates/
+│   └── index.html             # Jinja2-шаблон прогноза
 ├── static/
 │   └── css/
 │       └── styles.css
+├── tests/
+│   ├── test_api.py
+│   ├── test_api_image.py
+│   ├── test_debugger.py
+│   ├── test_page_download.py
+│   └── test_weather_parser.py
 └── data/
     ├── html_backup/           # локальные HTML-копии страниц Gismeteo
     └── weather.json           # сохранённые прогнозы
