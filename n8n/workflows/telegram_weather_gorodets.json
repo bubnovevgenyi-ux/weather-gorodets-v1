@@ -1,0 +1,298 @@
+{
+  "name": "Weather Gorodets — Telegram bot",
+  "nodes": [
+    {
+      "id": "2fb0b07b-8bd0-4aad-9c4a-4a9573f8d001",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {}
+      }
+    },
+    {
+      "id": "2fb0b07b-8bd0-4aad-9c4a-4a9573f8d002",
+      "name": "Normalize Telegram update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Преобразуем /start и callback_query в единый формат.\n// Все остальные сообщения игнорируются.\nconst periods = new Set([\"today\", \"tomorrow\", \"10_days\", \"2_weeks\"]);\nconst output = [];\n\nfor (const item of $input.all()) {\n  const update = item.json ?? {};\n  const message = update.message;\n  const callback = update.callback_query;\n\n  if (\n    typeof message?.text === \"string\" &&\n    /^\\/(start|menu)(?:@\\w+)?(?:\\s|$)/i.test(message.text.trim())\n  ) {\n    output.push({\n      json: {\n        action: \"welcome\",\n        chatId: message.chat.id,\n      },\n    });\n    continue;\n  }\n\n  if (callback && periods.has(callback.data)) {\n    const chatId = callback.message?.chat?.id ?? callback.from?.id;\n    if (chatId !== undefined && callback.id) {\n      output.push({\n        json: {\n          action: \"forecast\",\n          chatId,\n          callbackQueryId: callback.id,\n          period: callback.data,\n        },\n      });\n    }\n  }\n}\n\nreturn output;"
+      }
+    },
+    {
+      "id": "2fb0b07b-8bd0-4aad-9c4a-4a9573f8d003",
+      "name": "Is start or menu command?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f4e064a6-8c50-46b4-b675-13d5baaa0011",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "welcome",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "2fb0b07b-8bd0-4aad-9c4a-4a9573f8d004",
+      "name": "Send welcome menu",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        940,
+        180
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chatId }}",
+        "text": "Добро пожаловать в погодный бот Городца!\\n\\nВыберите, какой прогноз показать:",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Сегодня",
+                    "additionalFields": {
+                      "callback_data": "today"
+                    }
+                  },
+                  {
+                    "text": "Завтра",
+                    "additionalFields": {
+                      "callback_data": "tomorrow"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "10 дней",
+                    "additionalFields": {
+                      "callback_data": "10_days"
+                    }
+                  },
+                  {
+                    "text": "14 дней",
+                    "additionalFields": {
+                      "callback_data": "2_weeks"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {}
+      }
+    },
+    {
+      "id": "2fb0b07b-8bd0-4aad-9c4a-4a9573f8d005",
+      "name": "Answer callback query",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        940,
+        420
+      ],
+      "parameters": {
+        "resource": "callback",
+        "operation": "answerQuery",
+        "queryId": "={{ $json.callbackQueryId }}",
+        "additionalFields": {
+          "text": "Загружаю прогноз…"
+        }
+      }
+    },
+    {
+      "id": "2fb0b07b-8bd0-4aad-9c4a-4a9573f8d006",
+      "name": "Get forecast image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1180,
+        420
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'http://host.docker.internal:8000/api/v1/forecast/' + $('Normalize Telegram update').item.json.period + '/image' }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "2fb0b07b-8bd0-4aad-9c4a-4a9573f8d007",
+      "name": "Send forecast photo",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1420,
+        420
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendPhoto",
+        "chatId": "={{ $('Normalize Telegram update').item.json.chatId }}",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Сегодня",
+                    "additionalFields": {
+                      "callback_data": "today"
+                    }
+                  },
+                  {
+                    "text": "Завтра",
+                    "additionalFields": {
+                      "callback_data": "tomorrow"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "10 дней",
+                    "additionalFields": {
+                      "callback_data": "10_days"
+                    }
+                  },
+                  {
+                    "text": "14 дней",
+                    "additionalFields": {
+                      "callback_data": "2_weeks"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "caption": "Прогноз погоды в Городце. Выберите другой период:"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize Telegram update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Telegram update": {
+      "main": [
+        [
+          {
+            "node": "Is start or menu command?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is start or menu command?": {
+      "main": [
+        [
+          {
+            "node": "Send welcome menu",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Answer callback query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer callback query": {
+      "main": [
+        [
+          {
+            "node": "Get forecast image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get forecast image": {
+      "main": [
+        [
+          {
+            "node": "Send forecast photo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Moscow"
+  },
+  "active": false
+}
