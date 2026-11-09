@@ -133,3 +133,16 @@ h1 { margin:8px 0 6px; font-size:clamp(27px,3vw,36px); letter-spacing:-.035em; l
   .topbar-meta { gap:6px; flex-wrap:wrap; justify-content:flex-end; }
   .api-link { margin-left:2px; }
 }
+
+
+/* Навигация по периодам — ссылки на серверно отрендеренные страницы. */
+.period-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+.period-tab:focus-visible {
+  outline: 3px solid rgba(20,120,200,.35);
+  outline-offset: 2px;
+}

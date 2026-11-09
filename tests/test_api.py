@@ -1,4 +1,4 @@
-"""Проверки HTTP API и отдельной страницы документации."""
+"""Проверки JSON API, серверного HTML-рендеринга и документации."""
 
 import json
 import os
@@ -42,7 +42,19 @@ def make_payload() -> dict:
                 "label": "Погода 10 дней",
                 "source_url": "https://example.test/10-days/",
                 "resolution": "daily",
-                "days": {},
+                "days": {
+                    "1794124800": {
+                        "timestamp": 1794124800,
+                        "date": "2026-11-08",
+                        "sky": "Ясно",
+                        "temperature_c": None,
+                        "temperature_min_c": 1.0,
+                        "temperature_max_c": 6.0,
+                        "wind_speed_ms": 2.0,
+                        "wind_gust_ms": 4.0,
+                        "wind_direction": "С",
+                    }
+                },
             },
             "2_weeks": {
                 "label": "Погода 2 недели",
@@ -74,6 +86,17 @@ class WeatherApiTests(unittest.TestCase):
             encoding="utf-8",
         )
         return payload
+
+    def test_startup_collects_forecast_when_cache_is_missing(self) -> None:
+        with patch.object(api, "collect_forecasts") as collect:
+            with TestClient(api.app):
+                collect.assert_called_once_with(self.data_file)
+
+    def test_startup_does_not_collect_when_cache_exists(self) -> None:
+        self.write_payload()
+        with patch.object(api, "collect_forecasts") as collect:
+            with TestClient(api.app):
+                collect.assert_not_called()
 
     def test_health_without_forecast_reports_not_initialized(self) -> None:
         response = self.client.get("/api/v1/health")
@@ -115,6 +138,41 @@ class WeatherApiTests(unittest.TestCase):
         self.assertTrue(response.json()["forecast_available"])
         self.assertEqual(len(response.json()["available_periods"]), 4)
 
+    def test_homepage_renders_hourly_forecast_on_server(self) -> None:
+        self.write_payload()
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Погода сегодня", response.text)
+        self.assertIn("Облачно", response.text)
+        self.assertIn("12:00", response.text)
+        self.assertIn("4°", response.text)
+        self.assertIn("<svg", response.text)
+        self.assertNotIn("app.js", response.text)
+
+    def test_homepage_renders_daily_forecast_on_server(self) -> None:
+        self.write_payload()
+        response = self.client.get("/?period=10_days")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Прогноз на каждый день", response.text)
+        self.assertIn("Ясно", response.text)
+        self.assertIn("+1° / +6°", response.text)
+        self.assertIn("daily-grid", response.text)
+
+    def test_homepage_is_available_without_forecast(self) -> None:
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Пока нет данных прогноза", response.text)
+        self.assertIn("POST /api/v1/refresh", response.text)
+
+    def test_homepage_rejects_unknown_period(self) -> None:
+        response = self.client.get("/?period=next_month")
+        self.assertEqual(response.status_code, 404)
+
+    def test_static_stylesheet_is_served(self) -> None:
+        response = self.client.get("/static/styles.css")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(".forecast-card", response.text)
+
     def test_api_docs_page_is_available(self) -> None:
         response = self.client.get("/api-docs")
         self.assertEqual(response.status_code, 200)
@@ -134,7 +192,6 @@ class WeatherApiTests(unittest.TestCase):
         with patch.dict(os.environ, {"WEATHER_API_REFRESH_TOKEN": "unit-test-token"}):
             response = self.client.post("/api/v1/refresh")
         self.assertEqual(response.status_code, 401)
-
 
     def test_health_exposes_refresh_configuration_without_secret(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -172,7 +229,7 @@ class WeatherApiTests(unittest.TestCase):
                         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), payload)
-        collect.assert_called_once()
+        collect.assert_called_once_with(destination=self.data_file)
 
     def test_refresh_without_token_has_actionable_error(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
