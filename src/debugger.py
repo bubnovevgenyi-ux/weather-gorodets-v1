@@ -23,7 +23,7 @@ def configure_pydevd(env_file: Path) -> bool:
     if not enabled:
         return False
 
-    host = os.getenv("PYCHARM_DEBUG_HOST", "127.0.0.1").strip() or "127.0.0.1"
+    host = os.getenv("PYCHARM_DEBUG_HOST", "localhost").strip() or "127.0.0.1"
     raw_port = os.getenv("PYCHARM_DEBUG_PORT", "5678").strip()
     suspend = os.getenv("PYCHARM_DEBUG_SUSPEND", "0").strip().lower() in _TRUE_VALUES
 
