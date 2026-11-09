@@ -144,6 +144,7 @@ class WeatherApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Погода сегодня", response.text)
         self.assertIn("Облачно", response.text)
+        self.assertIn('href="/docs"', response.text)
         self.assertIn("12:00", response.text)
         self.assertIn("4°", response.text)
         self.assertIn("<svg", response.text)
@@ -173,14 +174,16 @@ class WeatherApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(".forecast-card", response.text)
 
-    def test_api_docs_page_is_available(self) -> None:
-        response = self.client.get("/api-docs")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Документация API", response.text)
-        self.assertIn("/api/v1/forecast", response.text)
+    def test_fastapi_native_documentation_is_available(self) -> None:
+        docs = self.client.get("/docs")
+        redoc = self.client.get("/redoc")
+        self.assertEqual(docs.status_code, 200)
+        self.assertEqual(redoc.status_code, 200)
+        self.assertIn("/openapi.json", docs.text)
+        self.assertEqual(self.client.get("/api-docs").status_code, 404)
 
     def test_openapi_schema_contains_weather_routes(self) -> None:
-        response = self.client.get("/api/openapi.json")
+        response = self.client.get("/openapi.json")
         self.assertEqual(response.status_code, 200)
         paths = response.json()["paths"]
         self.assertIn("/api/v1/health", paths)

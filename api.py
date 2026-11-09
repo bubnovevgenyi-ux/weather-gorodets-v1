@@ -13,7 +13,7 @@ from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.concurrency import run_in_threadpool
@@ -104,9 +104,6 @@ app = FastAPI(
         "Серверный HTML-интерфейс и JSON API почасового и дневного прогноза погоды "
         "в Городце. Данные собираются парсером Gismeteo и сохраняются локально."
     ),
-    docs_url="/api/swagger",
-    openapi_url="/api/openapi.json",
-    redoc_url=None,
     lifespan=lifespan,
 )
 
@@ -243,12 +240,5 @@ def refresh_forecast(
         REFRESH_LOCK.release()
 
 
-@app.get("/api-docs", include_in_schema=False)
-@app.get("/api-docs/", include_in_schema=False)
-def api_documentation() -> FileResponse:
-    """Отдельная русскоязычная страница документации API."""
-    return FileResponse(WEB_DIR / "api-docs.html")
-
-
-# Веб-ресурсы раздаются отдельно; корневой URL обслуживается шаблоном FastAPI/Jinja2.
+# Статические ресурсы интерфейса. Документация предоставляется FastAPI по умолчанию.
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
