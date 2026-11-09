@@ -23,6 +23,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.concurrency import run_in_threadpool
 
 from src.collector import HTML_BACKUP_DIR, WEATHER_JSON_PATH, collect_forecasts
+from src.debugger import configure_pydevd
 from src.presentation import build_forecast_view
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -39,6 +40,8 @@ PERIOD_LABELS = (
     {"key": "2_weeks", "label": "2 недели"},
 )
 logger = logging.getLogger(__name__)
+# Подключение к PyCharm выполняется только при PYCHARM_DEBUG=1.
+configure_pydevd(ENV_FILE)
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 PERIOD_TITLES = {
