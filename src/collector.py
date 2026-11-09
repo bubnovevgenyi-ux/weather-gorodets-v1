@@ -1,6 +1,6 @@
-"""Общий сборщик погодных данных Gismeteo для CLI и HTTP API."""
+"""Сборщик погодных данных Gismeteo для FastAPI-сервиса."""
 
-import sys
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -15,6 +15,7 @@ BASE_URL = "https://www.gismeteo.ru/weather-gorodets-4334/"
 REQUEST_TIMEOUT = 15
 HTML_BACKUP_DIR = PROJECT_ROOT / "data" / "html_backup"
 WEATHER_JSON_PATH = PROJECT_ROOT / "data" / "weather.json"
+logger = logging.getLogger(__name__)
 
 HEADERS = {
     "Accept": "*/*",
@@ -86,10 +87,11 @@ def download_page(
                 f"Резервная копия {backup_path} пуста."
             ) from exc
 
-        print(
-            f"Предупреждение: {url} недоступна ({exc}). "
-            f"Используется сохранённая копия: {backup_path}",
-            file=sys.stderr,
+        logger.warning(
+            "%s недоступна (%s). Используется сохранённая копия: %s",
+            url,
+            exc,
+            backup_path,
         )
         return cached_html
 
@@ -101,7 +103,7 @@ def download_page(
             f"в {backup_path}: {exc}"
         ) from exc
 
-    print(f"HTML сохранён: {backup_path}")
+    logger.info("HTML-страница сохранена: %s", backup_path)
     return html
 
 
@@ -146,6 +148,7 @@ def collect_forecasts(
         source_urls=source_urls,
         destination=destination,
     )
+    logger.info("Прогноз погоды обновлён: %s", json_path)
     return CollectionResult(
         forecasts=forecasts,
         labels=labels,
