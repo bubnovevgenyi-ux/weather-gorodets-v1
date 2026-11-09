@@ -144,6 +144,7 @@ class WeatherApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Погода сегодня", response.text)
         self.assertIn("Облачно", response.text)
+        self.assertIn('href="/docs"', response.text)
         self.assertIn("12:00", response.text)
         self.assertIn("4°", response.text)
         self.assertIn("<svg", response.text)
