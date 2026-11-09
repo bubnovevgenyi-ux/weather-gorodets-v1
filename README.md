@@ -131,11 +131,7 @@ python -m unittest discover -s tests -v
 
 Генератор создаёт компактные JPEG-карточки шириной 1080 px. Высота подстраивается под количество прогнозных записей: почасовые карточки на сегодня/завтра и списки на 10/14 дней. Изображение формируется напрямую из `data/weather.json`, без Playwright, Chromium и снимка длинной HTML-страницы.
 
-Установите Pillow:
-
-```powershell
-python -m pip install -r requirements-render.txt
-```
+Pillow устанавливается вместе с остальными зависимостями проекта из `requirements.txt`.
 
 После первого запуска FastAPI создаст `data/weather.json`. Затем:
 
@@ -158,7 +154,6 @@ python scripts/render_weather.py --period today --output output/telegram
 weather-gorodets-v1/
 ├── api.py                     # FastAPI, JSON API и серверные маршруты
 ├── requirements.txt
-├── requirements-render.txt
 ├── templates/
 │   └── index.html             # Jinja2-шаблон прогноза
 ├── src/
@@ -170,7 +165,8 @@ weather-gorodets-v1/
 ├── tests/
 │   ├── test_api.py
 │   ├── test_page_download.py
-│   └── test_weather_parser.py
+│   ├── test_weather_parser.py
+│   └── test_render_weather.py
 ├── scripts/
 │   └── render_weather.py
 ├── web/
